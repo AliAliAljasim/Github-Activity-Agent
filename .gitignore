@@ -1,0 +1,6 @@
+.env
+.cache/
+.server.pid
+.server.log
+node_modules/
+Activity Monitor.dc.html

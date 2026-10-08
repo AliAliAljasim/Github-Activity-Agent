@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#f7f7f5;--panel:#ffffff;--sunken:#f1f1ee;--hover:#f5f5f2;--border:#e7e7e3;--border2:#d5d5d0;--text:#17171a;--muted:#5f5f67;--faint:#8e8e96;--green:#1d8a4b;--purple:#7445d6;--red:#cc3a30;--amber:#a86f05;--green-bg:color-mix(in srgb,var(--green) 11%,transparent);--purple-bg:color-mix(in srgb,var(--purple) 11%,transparent);--red-bg:color-mix(in srgb,var(--red) 10%,transparent);--amber-bg:color-mix(in srgb,var(--amber) 13%,transparent);--hl:color-mix(in srgb,var(--amber) 16%,transparent);--spark:color-mix(in srgb,var(--text) 7%,transparent);--shimmer:#e9e9e5;--shadow:0 1px 2px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.08);--shadow-lg:0 2px 6px rgba(0,0,0,.06),0 24px 60px rgba(0,0,0,.16);--c0:oklch(0.33 0.01 270);--c1:oklch(0.42 0.08 262);--c2:oklch(0.66 0.08 215);--c3:oklch(0.76 0.1 85);--c4:oklch(0.62 0.1 30);--c5:oklch(0.58 0.07 155);--c6:oklch(0.72 0.05 310);--py:10px}
+html[data-theme=dark]{--bg:#0a0a0b;--panel:#111113;--sunken:#18181b;--hover:#16161a;--border:#232327;--border2:#313137;--text:#ececee;--muted:#a3a3ac;--faint:#73737c;--green:#3fbf73;--purple:#a685f2;--red:#f2675e;--amber:#e3a83a;--shimmer:#222226;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.5);--shadow-lg:0 2px 6px rgba(0,0,0,.4),0 24px 60px rgba(0,0,0,.6);--c0:oklch(0.84 0.01 270);--c1:oklch(0.7 0.09 262);--c2:oklch(0.74 0.08 215);--c3:oklch(0.8 0.1 85);--c4:oklch(0.68 0.11 30);--c5:oklch(0.68 0.08 155);--c6:oklch(0.62 0.05 310)}
+html[data-density=compact]{--py:6px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Geist,ui-sans-serif,system-ui,sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased;transition:background .2s}
+a{color:inherit;text-decoration:none}
+a:hover{color:var(--text)}
+button,input{font:inherit;color:inherit}
+input::placeholder{color:var(--faint)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@keyframes caret{50%{opacity:0}}
+</style>
+</helmet>
+
+<header style="position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border)">
+  <div style="max-width:1480px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:10px">
+      <div style="width:22px;height:22px;border-radius:6px;background:var(--text);color:var(--bg);display:grid;place-items:center">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8.5h3l2-5 3 9 2-4h3"></path></svg>
+      </div>
+      <span style="font-weight:600;font-size:14px;letter-spacing:-.01em;white-space:nowrap">Activity Monitor</span>
+    </div>
+
+    <div style="position:relative">
+      <button onClick="{{ toggleRepoMenu }}" style="height:30px;padding:0 10px;display:flex;align-items:center;gap:7px;border:1px solid var(--border);background:var(--panel);border-radius:7px;cursor:pointer;font-size:12.5px" style-hover="border-color:var(--border2)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" style="color:var(--muted)"><path d="M3 13V3.5A1.5 1.5 0 0 1 4.5 2H13v9.5H4.5A1.5 1.5 0 0 0 3 13a1.5 1.5 0 0 0 1.5 1.5H13"></path></svg>
+        <span>{{ repoLabel }}</span>
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--faint)"><path d="M4 6l4 4 4-4"></path></svg>
+      </button>
+      <sc-if value="{{ repoMenuOpen }}">
+        <div style="position:absolute;top:36px;left:0;z-index:30;width:max-content;min-width:260px;max-width:min(520px,calc(100vw - 40px));background:var(--panel);border:1px solid var(--border2);border-radius:9px;box-shadow:var(--shadow);padding:4px">
+          <button onClick="{{ selectAllRepos }}" style="width:100%;height:32px;display:flex;align-items:center;gap:9px;padding:0 9px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-size:12.5px;text-align:left" style-hover="background:var(--sunken)">
+            <span style="width:14px;height:14px;border-radius:4px;border:1px solid var(--border2);background:{{ allBoxBg }};color:var(--bg);display:grid;place-items:center"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3.5 8.5l3 3 6-7"></path></svg></span>
+            <span style="flex:1">All repositories</span>
+          </button>
+          <div style="height:1px;background:var(--border);margin:4px 0"></div>
+          <sc-for list="{{ repoOptions }}" as="o" hint-placeholder-count="4">
+            <button onClick="{{ o.toggle }}" style="width:100%;height:32px;display:flex;align-items:center;gap:9px;padding:0 9px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-size:12.5px;text-align:left" style-hover="background:var(--sunken)">
+              <span style="width:14px;height:14px;border-radius:4px;border:1px solid var(--border2);background:{{ o.boxBg }};color:var(--bg);display:grid;place-items:center"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3.5 8.5l3 3 6-7"></path></svg></span>
+              <span title="{{ o.name }}" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;font-family:'Geist Mono',monospace;font-size:12px">{{ o.name }}</span>
+              <span style="font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums">{{ o.count }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="position:relative">
+    <div style="display:flex;align-items:center;gap:2px;padding:2px;background:var(--sunken);border:1px solid var(--border);border-radius:7px;height:30px">
+      <sc-for list="{{ ranges }}" as="r" hint-placeholder-count="4">
+        <button onClick="{{ r.onClick }}" style="height:24px;padding:0 9px;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:500;background:{{ r.bg }};color:{{ r.color }};box-shadow:{{ r.sh }};display:flex;align-items:center;gap:5px;white-space:nowrap">{{ r.label }}</button>
+      </sc-for>
+    </div>
+      <sc-if value="{{ rangeMenuOpen }}">
+        <div style="position:absolute;top:36px;left:0;z-index:30;width:292px;background:var(--panel);border:1px solid var(--border2);border-radius:12px;box-shadow:var(--shadow-lg);padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <button onClick="{{ calPrev }}" title="Previous month" style="width:28px;height:28px;border:none;background:transparent;border-radius:6px;cursor:pointer;color:var(--muted);display:grid;place-items:center" style-hover="background:var(--sunken)"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"></path></svg></button>
+            <span style="font-weight:600;font-size:13px">{{ calTitle }}</span>
+            <button onClick="{{ calNext }}" title="Next month" style="width:28px;height:28px;border:none;background:transparent;border-radius:6px;cursor:pointer;color:var(--muted);display:grid;place-items:center;opacity:{{ calNextOpacity }}" style-hover="background:var(--sunken)"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"></path></svg></button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px;text-align:center">
+            <span style="font-size:11px;color:var(--faint);height:22px">Mo</span><span style="font-size:11px;color:var(--faint);height:22px">Tu</span><span style="font-size:11px;color:var(--faint);height:22px">We</span><span style="font-size:11px;color:var(--faint);height:22px">Th</span><span style="font-size:11px;color:var(--faint);height:22px">Fr</span><span style="font-size:11px;color:var(--faint);height:22px">Sa</span><span style="font-size:11px;color:var(--faint);height:22px">Su</span>
+            <sc-for list="{{ calCells }}" as="c" hint-placeholder-count="35">
+              <button onClick="{{ c.onClick }}" style="height:32px;border:none;border-radius:{{ c.radius }};background:{{ c.bg }};color:{{ c.color }};opacity:{{ c.opacity }};cursor:{{ c.cursor }};font-size:12.5px;font-weight:{{ c.weight }};font-variant-numeric:tabular-nums;box-shadow:{{ c.ring }}" style-hover="background:{{ c.hoverBg }}">{{ c.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <sc-for list="{{ presets }}" as="p" hint-placeholder-count="3">
+              <button onClick="{{ p.onClick }}" style="height:24px;padding:0 8px;border:1px solid var(--border);background:var(--sunken);border-radius:5px;cursor:pointer;font-size:11.5px" style-hover="border-color:var(--border2)">{{ p.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:11.5px;color:var(--faint)">{{ customSummary }}</span>
+            <button onClick="{{ closeRange }}" style="height:26px;padding:0 12px;border:none;background:var(--text);color:var(--bg);border-radius:6px;cursor:pointer;font-size:12px;font-weight:500">Done</button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="position:relative">
+      <button onClick="{{ toggleAuthorMenu }}" style="height:30px;padding:0 10px;display:flex;align-items:center;gap:7px;border:1px solid var(--border);background:var(--panel);border-radius:7px;cursor:pointer;font-size:12.5px" style-hover="border-color:var(--border2)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" style="color:var(--muted)"><circle cx="8" cy="5.5" r="2.5"></circle><path d="M3 13.5c.8-2.3 2.7-3.5 5-3.5s4.2 1.2 5 3.5"></path></svg>
+        <span>{{ authorLabel }}</span>
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--faint)"><path d="M4 6l4 4 4-4"></path></svg>
+      </button>
+      <sc-if value="{{ authorMenuOpen }}">
+        <div style="position:absolute;top:36px;left:0;z-index:30;width:240px;background:var(--panel);border:1px solid var(--border2);border-radius:9px;box-shadow:var(--shadow);padding:4px">
+          <button onClick="{{ clearAuthors }}" style="width:100%;height:32px;display:flex;align-items:center;gap:9px;padding:0 9px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-size:12.5px;text-align:left" style-hover="background:var(--sunken)">
+            <span style="width:14px;height:14px;border-radius:4px;border:1px solid var(--border2);background:{{ allAuthorsBg }};color:var(--bg);display:grid;place-items:center"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3.5 8.5l3 3 6-7"></path></svg></span>
+            <span style="flex:1">All authors</span>
+          </button>
+          <div style="height:1px;background:var(--border);margin:4px 0"></div>
+          <sc-for list="{{ authorOptions }}" as="o" hint-placeholder-count="6">
+            <button onClick="{{ o.toggle }}" style="width:100%;height:32px;display:flex;align-items:center;gap:9px;padding:0 9px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-size:12.5px;text-align:left" style-hover="background:var(--sunken)">
+              <span style="width:14px;height:14px;border-radius:4px;border:1px solid var(--border2);background:{{ o.boxBg }};color:var(--bg);display:grid;place-items:center"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3.5 8.5l3 3 6-7"></path></svg></span>
+              <span style="width:18px;height:18px;border-radius:50%;background:{{ o.av }};color:#111;font-size:8.5px;font-weight:600;display:grid;place-items:center">{{ o.initials }}</span>
+              <span style="flex:1">{{ o.name }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ anyMenu }}"><div onClick="{{ closeMenus }}" style="position:fixed;inset:0;z-index:25"></div></sc-if>
+
+    <div style="display:flex;align-items:center;gap:2px;padding:2px;background:var(--sunken);border:1px solid var(--border);border-radius:7px;height:30px">
+      <a href="/" style="height:24px;padding:0 9px;border-radius:5px;font-size:12px;font-weight:500;display:flex;align-items:center;background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.12)">Dashboard</a>
+      <a href="/compare" style="height:24px;padding:0 9px;border-radius:5px;font-size:12px;font-weight:500;display:flex;align-items:center;color:var(--muted)" style-hover="color:var(--text)">Compare</a>
+    </div>
+    <div style="flex:1"></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--faint);white-space:nowrap;display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:{{ syncDot }}"></span>{{ syncedText }}</span>
+      <button onClick="{{ refresh }}" title="Refresh now (auto-refreshes every 5 min)" style="height:30px;padding:0 10px;display:flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--panel);border-radius:7px;cursor:pointer;font-size:12.5px;opacity:{{ refreshOpacity }}" style-hover="border-color:var(--border2)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" style="animation:{{ spinAnim }}"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"></path><path d="M13.5 2.5v3h-3"></path></svg>
+        <span>{{ refreshLabel }}</span>
+      </button>
+      <button onClick="{{ toggleTheme }}" title="Toggle theme" style="width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--border);background:var(--panel);border-radius:7px;cursor:pointer;color:var(--muted)" style-hover="border-color:var(--border2);color:var(--text)">
+        <sc-if value="{{ isDark }}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"></circle><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"></path></svg></sc-if>
+        <sc-if value="{{ isLight }}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z"></path></svg></sc-if>
+      </button>
+    </div>
+  </div>
+  <sc-if value="{{ hasChips }}">
+    <div style="max-width:1480px;margin:0 auto;padding:0 20px 10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <sc-for list="{{ chips }}" as="c" hint-placeholder-count="1">
+        <span style="height:24px;padding:0 3px 0 9px;border-radius:999px;border:1px solid var(--border2);background:var(--panel);font-size:12px;display:flex;gap:6px;align-items:center">
+          <span style="color:var(--faint)">{{ c.kind }}</span>
+          <span style="font-family:{{ c.font }}">{{ c.label }}</span>
+          <button onClick="{{ c.remove }}" title="Remove filter" style="width:18px;height:18px;border-radius:50%;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--faint)" style-hover="background:var(--sunken);color:var(--text)"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button>
+        </span>
+      </sc-for>
+      <button onClick="{{ clearAll }}" style="height:24px;padding:0 8px;border:none;background:transparent;font-size:12px;color:var(--muted);cursor:pointer;border-radius:6px" style-hover="color:var(--text);background:var(--sunken)">Clear all</button>
+    </div>
+  </sc-if>
+</header>
+
+<main style="max-width:1480px;margin:0 auto;padding:16px 20px 120px;display:flex;flex-direction:column;gap:16px">
+
+  <sc-if value="{{ isAuthError }}">
+    <div style="max-width:560px;margin:72px auto;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:28px;display:flex;flex-direction:column;gap:14px">
+      <div style="width:36px;height:36px;border-radius:9px;background:var(--red-bg);color:var(--red);display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="7" width="10" height="7" rx="1.5"></rect><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"></path></svg></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span style="font-size:16px;font-weight:600;letter-spacing:-.01em">GitHub token is invalid or expired</span>
+        <span style="color:var(--muted);font-size:13px;line-height:1.55;text-wrap:pretty">GitHub returned <span style="font-family:'Geist Mono',monospace;font-size:12px">401 Bad credentials</span> for every repository. Activity can’t be fetched until the token is replaced.</span>
+      </div>
+      <div style="background:var(--sunken);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Geist Mono',monospace;font-size:12px;line-height:1.7;color:var(--muted)">
+        <div><span style="color:var(--faint)">env</span> GITHUB_TOKEN=ghp_••••••••3kQa</div>
+        <div><span style="color:var(--faint)">needs</span> repo, read:org</div>
+        <div><span style="color:var(--faint)">last ok</span> Oct 6, 09:14</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onClick="{{ refresh }}" style="height:32px;padding:0 14px;border:none;background:var(--text);color:var(--bg);border-radius:7px;cursor:pointer;font-weight:500">Retry</button>
+        <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens" target="_blank" style="height:32px;padding:0 14px;border:1px solid var(--border);background:var(--panel);border-radius:7px;display:flex;align-items:center;font-size:13px">Token setup guide</a>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showDash }}">
+    <sc-if value="{{ isRateLimited }}">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:9px;background:var(--amber-bg);border:1px solid color-mix(in srgb,var(--amber) 30%,transparent)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--amber)" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="6.25"></circle><path d="M8 4.5V8l2.5 1.5"></path></svg>
+        <span style="font-weight:500">GitHub API rate limit reached</span>
+        <span style="color:var(--muted)">5,000 of 5,000 requests used this hour. Showing cached data from 14:05.</span>
+        <div style="flex:1"></div>
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--muted)">Resets in {{ rlReset }}</span>
+      </div>
+    </sc-if>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px">
+      <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px 13px;display:flex;flex-direction:column;gap:8px;min-width:0">
+          <span style="font-size:12px;color:var(--muted)">{{ s.label }}</span>
+          <sc-if value="{{ s.loading }}">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;height:48px">
+              <div style="display:flex;flex-direction:column;gap:8px"><div style="width:56px;height:24px;border-radius:5px;background:linear-gradient(90deg,var(--sunken) 30%,var(--shimmer) 50%,var(--sunken) 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite"></div><div style="width:90px;height:10px;border-radius:4px;background:var(--sunken)"></div></div>
+              <div style="width:96px;height:28px;border-radius:5px;background:linear-gradient(90deg,var(--sunken) 30%,var(--shimmer) 50%,var(--sunken) 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite"></div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ s.ready }}">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;height:48px">
+              <div style="display:flex;flex-direction:column;gap:3px;min-width:0">
+                <span style="font-size:26px;font-weight:600;letter-spacing:-.025em;font-variant-numeric:tabular-nums;line-height:1.1">{{ s.value }}</span>
+                <span style="font-size:11.5px;color:var(--muted);white-space:nowrap"><span style="color:var(--text);font-weight:500">{{ s.delta }}</span> {{ s.vs }}</span>
+              </div>
+              <svg width="96" height="32" viewBox="0 0 96 32" preserveAspectRatio="none" style="flex:none;overflow:visible"><path d="{{ s.area }}" fill="var(--spark)"></path><polyline points="{{ s.spark }}" fill="none" stroke="var(--text)" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"></polyline></svg>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+      <div style="flex:1.85 1 600px;min-width:0;display:flex;flex-direction:column;gap:16px">
+
+        <section style="background:var(--panel);border:1px solid var(--border);border-radius:10px">
+          <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <span style="font-weight:600">Pushes</span>
+            <span style="color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums">{{ chartSub }}</span>
+            <div style="flex:1"></div>
+            <span style="font-size:12px;color:var(--faint)">Stack by</span>
+            <div style="display:flex;gap:2px;padding:2px;background:var(--sunken);border:1px solid var(--border);border-radius:7px">
+              <sc-for list="{{ stackModes }}" as="m" hint-placeholder-count="3">
+                <button onClick="{{ m.onClick }}" style="height:22px;padding:0 9px;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:500;background:{{ m.bg }};color:{{ m.color }};box-shadow:{{ m.sh }}">{{ m.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding:16px 14px 12px">
+            <sc-if value="{{ isLoading }}">
+              <div style="height:176px;display:flex;align-items:flex-end;gap:6px;padding-left:30px">
+                <sc-for list="{{ skelBars }}" as="h" hint-placeholder-count="7"><div style="flex:1;height:{{ h }}%;border-radius:3px;background:linear-gradient(90deg,var(--sunken) 30%,var(--shimmer) 50%,var(--sunken) 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite"></div></sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isReady }}">
+              <div style="display:flex;gap:8px">
+                <div style="width:22px;height:150px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;font-family:'Geist Mono',monospace;font-size:10.5px;color:var(--faint);margin-top:-6px">
+                  <span>{{ yMax }}</span><span>{{ yMid }}</span><span style="margin-bottom:-6px">0</span>
+                </div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:7px">
+                  <div onMouseLeave="{{ chartLeave }}" style="position:relative;height:150px;border-bottom:1px solid var(--border2)">
+                    <div style="position:absolute;left:0;right:0;top:0;border-top:1px dashed var(--border)"></div>
+                    <div style="position:absolute;left:0;right:0;top:50%;border-top:1px dashed var(--border)"></div>
+                    <div style="position:absolute;inset:0;display:flex;gap:3px;align-items:flex-end">
+                      <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7">
+                        <div onClick="{{ b.onClick }}" onMouseEnter="{{ b.onEnter }}" title="{{ b.title }}" style="flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer;opacity:{{ b.op }};transition:opacity .15s;border-radius:4px 4px 0 0;background:{{ b.colBg }}">
+                          <div style="height:{{ b.h }}%;min-height:2px;display:flex;flex-direction:column-reverse;border-radius:3px 3px 1px 1px;overflow:hidden;background:var(--border2);transition:height .3s">
+                            <sc-for list="{{ b.segs }}" as="g" hint-placeholder-count="1"><div style="flex:{{ g.f }} 1 0px;background:{{ g.color }}"></div></sc-for>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <sc-if value="{{ chartEmpty }}"><div style="position:absolute;inset:0;display:grid;place-items:center;color:var(--faint);font-size:12.5px">No pushes in this range</div></sc-if>
+                  </div>
+                  <div style="display:flex;gap:3px">
+                    <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7"><span style="flex:1;min-width:0;text-align:center;font-family:'Geist Mono',monospace;font-size:10.5px;color:{{ b.labelColor }};white-space:nowrap;overflow:visible">{{ b.label }}</span></sc-for>
+                  </div>
+                </div>
+              </div>
+              <sc-if value="{{ hasLegend }}">
+                <div style="display:flex;gap:14px;flex-wrap:wrap;padding:12px 0 0 30px">
+                  <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4"><span style="display:flex;gap:6px;align-items:center;font-size:11.5px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:2px;background:{{ l.color }}"></span><span style="font-family:{{ l.font }}">{{ l.name }}</span></span></sc-for>
+                </div>
+              </sc-if>
+            </sc-if>
+          </div>
+        </section>
+
+        <section style="background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;flex-wrap:wrap">
+            <span style="font-weight:600">Activity</span>
+            <span style="color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums">{{ eventCount }}</span>
+            <sc-if value="{{ hasBucket }}">
+              <span style="height:22px;padding:0 3px 0 8px;border-radius:999px;background:var(--sunken);border:1px solid var(--border);font-size:11.5px;display:flex;align-items:center;gap:5px">{{ bucketLabel }}<button onClick="{{ clearBucket }}" style="width:16px;height:16px;border:none;background:transparent;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--faint)" style-hover="color:var(--text)"><svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button></span>
+            </sc-if>
+            <div style="flex:1"></div>
+            <span style="font-size:11.5px;color:var(--faint)">Click a bar to filter by day</span>
+          </div>
+
+          <sc-if value="{{ isLoading }}">
+            <sc-for list="{{ skelRows }}" as="k" hint-placeholder-count="6">
+              <div style="display:flex;gap:10px;padding:12px 14px;border-top:1px solid var(--border);align-items:center">
+                <div style="width:24px;height:24px;border-radius:6px;background:var(--sunken)"></div>
+                <div style="width:20px;height:20px;border-radius:50%;background:var(--sunken)"></div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:7px"><div style="width:{{ k.a }}%;height:10px;border-radius:4px;background:linear-gradient(90deg,var(--sunken) 30%,var(--shimmer) 50%,var(--sunken) 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite"></div><div style="width:{{ k.b }}%;height:9px;border-radius:4px;background:var(--sunken)"></div></div>
+                <div style="width:28px;height:10px;border-radius:4px;background:var(--sunken)"></div>
+              </div>
+            </sc-for>
+          </sc-if>
+
+          <sc-if value="{{ noEvents }}">
+            <div style="border-top:1px solid var(--border);padding:48px 20px 52px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+              <div style="width:36px;height:36px;border-radius:9px;background:var(--sunken);border:1px solid var(--border);color:var(--faint);display:grid;place-items:center"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.75"></circle><path d="M1 8h4.25M10.75 8H15"></path></svg></div>
+              <span style="font-weight:600;font-size:14px">{{ emptyTitle }}</span>
+              <span style="color:var(--muted);max-width:380px;text-wrap:pretty">{{ emptySub }}</span>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <sc-if value="{{ canWiden }}"><button onClick="{{ widen }}" style="height:30px;padding:0 12px;border:1px solid var(--border);background:var(--panel);border-radius:7px;cursor:pointer;font-size:12.5px" style-hover="border-color:var(--border2)">Show last 30 days</button></sc-if>
+                <sc-if value="{{ hasChips }}"><button onClick="{{ clearAll }}" style="height:30px;padding:0 12px;border:1px solid var(--border);background:var(--panel);border-radius:7px;cursor:pointer;font-size:12.5px" style-hover="border-color:var(--border2)">Clear filters</button></sc-if>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-for list="{{ events }}" as="e" hint-placeholder-count="8">
+            <div data-ev="{{ e.id }}" style="border-top:1px solid var(--border);background:{{ e.bg }};transition:background .5s">
+              <div onClick="{{ e.toggle }}" style="display:flex;gap:10px;padding:var(--py) 14px;align-items:flex-start;cursor:pointer" style-hover="background:var(--hover)">
+                <div style="flex:none;width:24px;height:24px;border-radius:6px;background:{{ e.iconBg }};color:{{ e.iconColor }};display:grid;place-items:center">
+                  <sc-if value="{{ e.iPush }}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.75"></circle><path d="M1 8h4.25M10.75 8H15"></path></svg></sc-if>
+                  <sc-if value="{{ e.iOpen }}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="4" cy="3.5" r="1.75"></circle><circle cx="4" cy="12.5" r="1.75"></circle><circle cx="12" cy="12.5" r="1.75"></circle><path d="M4 5.25v5.5M12 10.75V6.5a2 2 0 0 0-2-2H7M8.5 3 7 4.5 8.5 6"></path></svg></sc-if>
+                  <sc-if value="{{ e.iMerge }}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="4" cy="3.5" r="1.75"></circle><circle cx="4" cy="12.5" r="1.75"></circle><circle cx="12" cy="9" r="1.75"></circle><path d="M4 5.25v5.5M4 5.25c0 3 2.5 3.75 6.25 3.75"></path></svg></sc-if>
+                  <sc-if value="{{ e.iClose }}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="4" cy="3.5" r="1.75"></circle><circle cx="4" cy="12.5" r="1.75"></circle><circle cx="12" cy="12.5" r="1.75"></circle><path d="M4 5.25v5.5M12 10.75V8M10.25 2.75l3.5 3.5M13.75 2.75l-3.5 3.5"></path></svg></sc-if>
+                  <sc-if value="{{ e.iReview }}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 3h11v7.5H8.5L5.5 13v-2.5h-3z"></path></svg></sc-if>
+                </div>
+                <span style="flex:none;width:20px;height:20px;margin-top:2px;border-radius:50%;background:{{ e.av }};color:#111;font-size:8.5px;font-weight:600;display:grid;place-items:center">{{ e.initials }}</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0 5px;line-height:1.45">
+                    <a onClick="{{ e.onAuthor }}" title="Filter by author" style="font-weight:500;cursor:pointer" style-hover="text-decoration:underline">{{ e.name }}</a>
+                    <span style="color:var(--muted)">{{ e.verb }}</span>
+                    <a onClick="{{ e.onRepo }}" title="Filter by repository" style="font-family:'Geist Mono',monospace;font-size:12px;cursor:pointer" style-hover="text-decoration:underline">{{ e.repo }}</a>
+                    <span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:var(--muted);background:var(--sunken);border:1px solid var(--border);border-radius:4px;padding:0 5px">{{ e.branch }}</span>
+                  </div>
+                  <span style="color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.msg }}</span>
+                </div>
+                <div style="flex:none;display:flex;align-items:center;gap:6px;margin-top:1px">
+                  <sc-if value="{{ e.canCompare }}"><button onClick="{{ e.onCompare }}" title="Compare code" style="height:22px;padding:0 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel);font-size:11.5px;color:var(--muted);display:flex;gap:4px;align-items:center;cursor:pointer;white-space:nowrap" style-hover="color:var(--text);border-color:var(--border2)">Compare</button>
+                  </sc-if>
+                  <button onClick="{{ e.onAsk }}" title="Ask about this" style="height:22px;padding:0 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel);font-size:11.5px;color:var(--muted);display:flex;gap:4px;align-items:center;cursor:pointer;white-space:nowrap" style-hover="color:var(--text);border-color:var(--border2)"><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 9.6 6.4 15 8 9.6 9.6 8 15 6.4 9.6 1 8 6.4 6.4z"></path></svg>Ask</button>
+                  <a href="{{ e.url }}" target="_blank" onClick="{{ e.stop }}" title="Open on GitHub" style="width:22px;height:22px;border-radius:5px;display:grid;place-items:center;color:var(--faint)" style-hover="color:var(--text);background:var(--sunken)"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9.5 2.5h4v4M13.5 2.5 7.5 8.5M11.5 9.5v4h-9v-9h4"></path></svg></a>
+                  <span style="width:30px;text-align:right;font-family:'Geist Mono',monospace;font-size:11.5px;color:var(--faint)" title="{{ e.abs }}">{{ e.time }}</span>
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--faint);transform:{{ e.chev }};transition:transform .15s"><path d="M6 4l4 4-4 4"></path></svg>
+                </div>
+              </div>
+              <sc-if value="{{ e.open }}">
+                <div style="padding:2px 14px 12px 78px;display:flex;flex-direction:column;gap:6px">
+                  <sc-if value="{{ e.hasCommits }}">
+                    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+                      <sc-for list="{{ e.commits }}" as="c" hint-placeholder-count="2">
+                        <div style="display:flex;gap:12px;align-items:baseline;padding:7px 10px;border-top:1px solid var(--border);font-size:12.5px;margin-top:-1px">
+                          <a href="{{ c.url }}" target="_blank" style="font-family:'Geist Mono',monospace;font-size:11.5px;color:var(--muted)" style-hover="text-decoration:underline">{{ c.sha }}</a>
+                          <span style="flex:1;min-width:0">{{ c.msg }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ e.hasFiles }}">
+                    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+                      <div style="display:flex;gap:10px;padding:7px 10px;background:var(--sunken);font-size:12px;color:var(--muted)"><span>{{ e.fileCount }} files changed</span><span style="font-family:'Geist Mono',monospace;color:var(--green)">+{{ e.adds }}</span><span style="font-family:'Geist Mono',monospace;color:var(--red)">−{{ e.dels }}</span></div>
+                      <sc-for list="{{ e.files }}" as="f" hint-placeholder-count="3">
+                        <div style="display:flex;gap:10px;align-items:center;padding:6px 10px;border-top:1px solid var(--border);font-family:'Geist Mono',monospace;font-size:11.5px">
+                          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.path }}</span>
+                          <span style="color:var(--green)">+{{ f.a }}</span><span style="color:var(--red)">−{{ f.d }}</span>
+                          <span style="display:flex;gap:1px"><sc-for list="{{ f.boxes }}" as="x" hint-placeholder-count="5"><span style="width:7px;height:7px;border-radius:1.5px;background:{{ x }}"></span></sc-for></span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ e.hasBody }}">
+                    <div style="background:var(--sunken);border-radius:8px;padding:9px 11px;font-size:12.5px;line-height:1.5">{{ e.body }}<div style="margin-top:4px;font-size:11.5px;color:var(--faint)">on #{{ e.pr }} · {{ e.title }}</div></div>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+
+          <sc-if value="{{ hasMore }}">
+            <button onClick="{{ showMore }}" style="width:100%;height:38px;border:none;border-top:1px solid var(--border);background:transparent;cursor:pointer;font-size:12.5px;color:var(--muted)" style-hover="background:var(--hover);color:var(--text)">Show {{ moreCount }} more</button>
+          </sc-if>
+        </section>
+      </div>
+
+      <div style="flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:16px">
+        <section style="background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px;padding:11px 14px">
+            <span style="font-weight:600">Pull requests</span>
+            <span style="color:var(--muted);font-size:12px">{{ prCount }}</span>
+          </div>
+          <sc-if value="{{ isLoading }}">
+            <sc-for list="{{ skelCards }}" as="k" hint-placeholder-count="4">
+              <div style="padding:12px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px">
+                <div style="width:{{ k.a }}%;height:11px;border-radius:4px;background:linear-gradient(90deg,var(--sunken) 30%,var(--shimmer) 50%,var(--sunken) 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite"></div>
+                <div style="width:50%;height:9px;border-radius:4px;background:var(--sunken)"></div>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ prEmpty }}">
+            <div style="border-top:1px solid var(--border);padding:28px 14px;text-align:center;color:var(--muted)">No pull requests match these filters</div>
+          </sc-if>
+          <sc-for list="{{ prGroups }}" as="g" hint-placeholder-count="4">
+            <div>
+              <div style="display:flex;gap:8px;align-items:center;padding:7px 14px;background:var(--sunken);border-top:1px solid var(--border);font-size:12px;font-weight:500">
+                <span style="width:7px;height:7px;border-radius:50%;background:{{ g.color }}"></span>{{ g.name }}<span style="color:var(--faint);font-weight:400">{{ g.count }}</span>
+              </div>
+              <sc-for list="{{ g.prs }}" as="p" hint-placeholder-count="2">
+                <div data-pr="{{ p.n }}" style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:10px;background:{{ p.bg }};transition:background .5s">
+                  <div style="flex:none;color:{{ g.color }};padding-top:2px">
+                    <sc-if value="{{ g.iOpen }}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="4" cy="3.5" r="1.75"></circle><circle cx="4" cy="12.5" r="1.75"></circle><circle cx="12" cy="12.5" r="1.75"></circle><path d="M4 5.25v5.5M12 10.75V6.5a2 2 0 0 0-2-2H7M8.5 3 7 4.5 8.5 6"></path></svg></sc-if>
+                    <sc-if value="{{ g.iMerge }}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="4" cy="3.5" r="1.75"></circle><circle cx="4" cy="12.5" r="1.75"></circle><circle cx="12" cy="9" r="1.75"></circle><path d="M4 5.25v5.5M4 5.25c0 3 2.5 3.75 6.25 3.75"></path></svg></sc-if>
+                    <sc-if value="{{ g.iClose }}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="4" cy="3.5" r="1.75"></circle><circle cx="4" cy="12.5" r="1.75"></circle><circle cx="12" cy="12.5" r="1.75"></circle><path d="M4 5.25v5.5M12 10.75V8M10.25 2.75l3.5 3.5M13.75 2.75l-3.5 3.5"></path></svg></sc-if>
+                  </div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                    <div style="display:flex;gap:6px;align-items:baseline;justify-content:space-between">
+                      <a href="{{ p.url }}" target="_blank" style="font-weight:500;line-height:1.35;text-wrap:pretty" style-hover="text-decoration:underline">{{ p.title }}</a>
+                      <span style="flex:none;font-family:'Geist Mono',monospace;font-size:11.5px;color:var(--faint)">#{{ p.n }}</span>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:12px;color:var(--muted)">
+                      <a onClick="{{ p.onRepo }}" style="font-family:'Geist Mono',monospace;font-size:11.5px;cursor:pointer" style-hover="text-decoration:underline;color:var(--text)">{{ p.repo }}</a>
+                      <a onClick="{{ p.onAuthor }}" style="display:flex;gap:5px;align-items:center;cursor:pointer" style-hover="color:var(--text)"><span style="width:16px;height:16px;border-radius:50%;background:{{ p.av }};color:#111;font-size:7.5px;font-weight:600;display:grid;place-items:center">{{ p.initials }}</span>{{ p.name }}</a>
+                      <span>{{ p.age }}</span>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                      <span style="font-size:11px;padding:2px 7px;border-radius:999px;background:{{ p.rvBg }};color:{{ p.rvColor }};font-weight:500">{{ p.rvLabel }}</span>
+                      <span style="display:flex;gap:4px;align-items:center;font-size:11.5px;color:{{ p.ciColor }}"><span style="width:6px;height:6px;border-radius:50%;background:currentColor"></span>{{ p.ciLabel }}</span>
+                      <span style="font-family:'Geist Mono',monospace;font-size:11px;color:var(--faint)">+{{ p.adds }} −{{ p.dels }}</span>
+                      <div style="flex:1"></div>
+                      <button onClick="{{ p.onCompare }}" title="Compare code" style="height:22px;padding:0 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel);font-size:11.5px;color:var(--muted);display:flex;gap:4px;align-items:center;cursor:pointer;white-space:nowrap" style-hover="color:var(--text);border-color:var(--border2)">Compare</button>
+                  <button onClick="{{ p.onAsk }}" title="Ask about this" style="height:22px;padding:0 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel);font-size:11.5px;color:var(--muted);display:flex;gap:4px;align-items:center;cursor:pointer" style-hover="color:var(--text);border-color:var(--border2)"><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 9.6 6.4 15 8 9.6 9.6 8 15 6.4 9.6 1 8 6.4 6.4z"></path></svg>Ask</button>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ g.hasMore }}">
+                <button onClick="{{ g.toggleMore }}" style="width:100%;height:32px;border:none;border-top:1px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--muted)" style-hover="background:var(--hover);color:var(--text)">{{ g.moreLabel }}</button>
+              </sc-if>
+            </div>
+          </sc-for>
+        </section>
+
+        <section style="background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)">
+            <span style="font-weight:600">Contributors</span>
+            <span style="color:var(--muted);font-size:12px">{{ contribSub }}</span>
+          </div>
+          <div style="padding:6px 0">
+            <sc-if value="{{ isLoading }}">
+              <sc-for list="{{ skelRows }}" as="k" hint-placeholder-count="5">
+                <div style="display:flex;gap:10px;padding:8px 14px;align-items:center"><div style="width:20px;height:20px;border-radius:50%;background:var(--sunken)"></div><div style="width:{{ k.b }}%;height:10px;border-radius:4px;background:linear-gradient(90deg,var(--sunken) 30%,var(--shimmer) 50%,var(--sunken) 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite"></div></div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ contribEmpty }}"><div style="padding:22px 14px;text-align:center;color:var(--muted)">No one has been active in this range</div></sc-if>
+            <sc-for list="{{ contributors }}" as="c" hint-placeholder-count="6">
+              <div onClick="{{ c.onClick }}" title="Filter by author" style="display:flex;gap:10px;align-items:center;padding:6px 14px;cursor:pointer;background:{{ c.bg }}" style-hover="background:var(--hover)">
+                <span style="width:14px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--faint)">{{ c.rank }}</span>
+                <span style="flex:none;width:20px;height:20px;border-radius:50%;background:{{ c.av }};color:#111;font-size:8.5px;font-weight:600;display:grid;place-items:center">{{ c.initials }}</span>
+                <div style="width:104px;flex:none;display:flex;flex-direction:column;min-width:0">
+                  <span style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</span>
+                  <span style="font-size:11px;color:var(--faint);white-space:nowrap">{{ c.breakdown }}</span>
+                </div>
+                <div style="flex:1;min-width:0;display:flex;gap:2px">
+                  <sc-for list="{{ c.cells }}" as="x" hint-placeholder-count="7"><span title="{{ x.title }}" style="flex:1;height:16px;border-radius:2px;background:{{ x.bg }}"></span></sc-for>
+                </div>
+                <span style="width:24px;text-align:right;font-variant-numeric:tabular-nums;font-weight:500">{{ c.total }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+    </div>
+  </sc-if>
+</main>
+
+<sc-if value="{{ chatClosed }}">
+  <button onClick="{{ openChat }}" style="position:fixed;right:20px;bottom:20px;z-index:40;height:40px;padding:0 10px 0 14px;border-radius:999px;background:var(--text);color:var(--bg);border:none;display:flex;gap:8px;align-items:center;box-shadow:var(--shadow-lg);cursor:pointer;font-weight:500">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 9.6 6.4 15 8 9.6 9.6 8 15 6.4 9.6 1 8 6.4 6.4z"></path></svg>Ask
+    <span style="font-family:'Geist Mono',monospace;font-size:11px;line-height:16px;padding:2px 7px;border-radius:5px;background:color-mix(in srgb,var(--bg) 18%,transparent)">{{ kbdHint }}</span>
+  </button>
+</sc-if>
+
+<sc-if value="{{ chatOpen }}">
+  <div style="position:fixed;right:16px;bottom:16px;z-index:40;width:min(420px,calc(100vw - 32px));height:min(620px,calc(100vh - 96px));background:var(--panel);border:1px solid var(--border2);border-radius:12px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:9px;padding:10px 10px 10px 14px;border-bottom:1px solid var(--border)">
+      <span style="width:22px;height:22px;border-radius:6px;background:var(--text);color:var(--bg);display:grid;place-items:center"><svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 9.6 6.4 15 8 9.6 9.6 8 15 6.4 9.6 1 8 6.4 6.4z"></path></svg></span>
+      <div style="display:flex;flex-direction:column;flex:1;min-width:0">
+        <span style="font-weight:600">Ask</span>
+        <span style="font-size:11.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ chatScope }}</span>
+      </div>
+      <sc-if value="{{ hasMessages }}"><button onClick="{{ clearChat }}" title="New conversation" style="height:26px;padding:0 8px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-size:12px;color:var(--muted)" style-hover="background:var(--sunken);color:var(--text)">Clear</button></sc-if>
+      <button onClick="{{ closeChat }}" title="Minimise (⌘K)" style="width:26px;height:26px;border:none;background:transparent;border-radius:6px;cursor:pointer;display:grid;place-items:center;color:var(--muted)" style-hover="background:var(--sunken);color:var(--text)"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6l4 4 4-4"></path></svg></button>
+    </div>
+
+    <div ref="{{ threadRef }}" style="flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:16px">
+      <sc-if value="{{ noMessages }}">
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:auto">
+          <span style="color:var(--muted);line-height:1.5;text-wrap:pretty">Ask about pushes, pull requests and reviews in the current view. Answers link back to the matching items.</span>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ suggestions }}" as="q" hint-placeholder-count="3">
+              <button onClick="{{ q.onClick }}" style="display:flex;align-items:center;gap:8px;text-align:left;padding:9px 11px;border:1px solid var(--border);background:var(--panel);border-radius:8px;cursor:pointer;font-size:12.5px" style-hover="border-color:var(--border2);background:var(--hover)"><span style="flex:1">{{ q.label }}</span><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--faint)"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <sc-for list="{{ messages }}" as="m" hint-placeholder-count="0">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <sc-if value="{{ m.isUser }}">
+            <div style="align-self:flex-end;max-width:85%;display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+              <sc-if value="{{ m.hasCtx }}"><span style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;padding:2px 7px;border:1px solid var(--border);border-radius:5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.ctxLabel }}</span></sc-if>
+              <div style="background:var(--sunken);border-radius:10px 10px 3px 10px;padding:8px 12px;line-height:1.45">{{ m.text }}</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ m.isAi }}">
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <span style="flex:none;width:20px;height:20px;border-radius:5px;border:1px solid var(--border);display:grid;place-items:center;color:var(--text);margin-top:1px"><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 9.6 6.4 15 8 9.6 9.6 8 15 6.4 9.6 1 8 6.4 6.4z"></path></svg></span>
+              <div style="flex:1;min-width:0">
+                <sc-if value="{{ m.thinking }}">
+                  <div style="display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12.5px;padding-top:2px">
+                    <span style="display:flex;gap:3px"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 1.2s infinite"></span><span style="width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 1.2s .2s infinite"></span><span style="width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 1.2s .4s infinite"></span></span>
+                    {{ m.label }}
+                  </div>
+                </sc-if>
+                <sc-if value="{{ m.answering }}">
+                  <div style="white-space:pre-wrap;line-height:1.6;text-wrap:pretty"><sc-for list="{{ m.parts }}" as="p" hint-placeholder-count="0"><sc-if value="{{ p.isText }}"><span>{{ p.v }}</span></sc-if><sc-if value="{{ p.isRef }}"><a onClick="{{ p.onClick }}" title="Show in dashboard" style="font-family:'Geist Mono',monospace;font-size:11.5px;padding:1px 5px;border-radius:4px;background:var(--sunken);border:1px solid var(--border);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--text)">{{ p.v }}</a></sc-if></sc-for><sc-if value="{{ m.streaming }}"><span style="display:inline-block;width:7px;height:14px;margin-left:2px;vertical-align:-2px;background:var(--text);animation:caret 1s steps(1) infinite"></span></sc-if></div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:8px">
+      <sc-if value="{{ hasCtx }}">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="align-self:flex-start;max-width:100%;height:24px;padding:0 3px 0 8px;border-radius:6px;background:var(--sunken);border:1px solid var(--border);font-size:11.5px;display:flex;gap:6px;align-items:center"><span style="color:var(--faint)">About</span><span style="font-family:'Geist Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ctxLabel }}</span><button onClick="{{ clearCtx }}" style="flex:none;width:18px;height:18px;border:none;background:transparent;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--faint)" style-hover="color:var(--text)"><svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button></span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <sc-for list="{{ ctxSuggestions }}" as="q" hint-placeholder-count="2"><button onClick="{{ q.onClick }}" style="height:26px;padding:0 10px;border:1px solid var(--border);background:var(--panel);border-radius:999px;cursor:pointer;font-size:12px" style-hover="border-color:var(--border2)">{{ q.label }}</button></sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <div style="display:flex;gap:6px;align-items:center;border:1px solid var(--border2);border-radius:9px;padding:4px 4px 4px 12px;background:var(--bg)">
+        <input ref="{{ inputRef }}" value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onKey }}" placeholder="Ask about this activity…" style="flex:1;min-width:0;border:none;outline:none;background:transparent;height:30px;font-size:13px">
+        <button onClick="{{ sendDraft }}" title="Send" style="width:30px;height:30px;border:none;border-radius:7px;background:{{ sendBg }};color:var(--bg);display:grid;place-items:center;cursor:pointer"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"></path></svg></button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Display&quot;},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Live&quot;,&quot;Loading&quot;,&quot;Empty&quot;,&quot;Rate limited&quot;,&quot;Auth error&quot;],&quot;default&quot;:&quot;Live&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;State&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Comfortable&quot;,&quot;Compact&quot;],&quot;default&quot;:&quot;Comfortable&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Display&quot;}}">
+let NOW=new Date(2026,9,8,14,32).getTime();const H=36e5,D=864e5;
+let SOD=(()=>{const d=new Date(NOW);d.setHours(0,0,0,0);return d.getTime()})();
+const mkRng=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const REPOS=['acme/api','acme/web','acme/infra','acme/tokens'];
+const PEOPLE={mchen:{name:'Maya Chen',hue:255},okafor:{name:'Daniel Okafor',hue:40},lpetrov:{name:'Lena Petrov',hue:160},rsingh:{name:'Ravi Singh',hue:320},jhale:{name:'Jonah Hale',hue:95},aito:{name:'Aiko Ito',hue:205}};
+let AIDS=Object.keys(PEOPLE);
+const SER=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
+const MSGS=['Fix flaky retry test on CI','Bump typescript to 5.9','Tighten types on event payloads','Remove unused feature flag','Add structured logging to worker','Handle empty org list gracefully','Refactor HTTP client timeouts','Update README setup steps','Speed up lint by caching','Guard against null session','Add index on events.created_at','Extract date utils','Fix timezone rollover in charts','Reduce bundle size of icons','Document webhook payload shape','Use cursor pagination in admin','Clean up stale migrations','Add e2e for settings save','Lazy-load heavy chart deps','Normalize repo slugs'];
+const BRANCHES=['main','main','main','fix/flaky-e2e','chore/deps','feat/audit-log','refactor/http-client','feat/search-index','fix/tz-rollover'];
+const FILES={'acme/api':['src/limits/bucket.ts','src/webhooks/retry.ts','src/routes/events.ts','src/db/org.ts','test/limits.spec.ts','src/http/client.ts'],'acme/web':['app/settings/page.tsx','components/form/Field.tsx','components/table/VirtualRows.tsx','lib/session.ts','app/layout.tsx','styles/forms.css'],'acme/infra':['terraform/providers.tf','terraform/state.tf','modules/s3/main.tf','modules/s3/variables.tf','envs/prod.tfvars','envs/staging.tfvars'],'acme/tokens':['tokens/elevation.json','tokens/color.dark.json','tokens/spacing.json','build/transform.ts','CHANGELOG.md','package.json']};
+const PRS=[
+{n:131,repo:'acme/web',by:'aito',title:'Migrate settings page to form primitives',status:'open',ci:'running',opened:3,branch:'feat/settings-forms',adds:412,dels:288,reviews:[]},
+{n:130,repo:'acme/api',by:'okafor',title:'Cache org membership lookups',status:'open',ci:'pass',opened:9,branch:'perf/org-cache',adds:96,dels:12,reviews:[]},
+{n:129,repo:'acme/infra',by:'jhale',title:'Bump Terraform AWS provider to 6.4',status:'open',ci:'fail',opened:20,branch:'chore/aws-provider-6.4',adds:38,dels:31,reviews:[]},
+{n:127,repo:'acme/web',by:'lpetrov',title:'Virtualise activity table for large orgs',status:'review',ci:'pass',opened:28,branch:'feat/virtual-table',adds:233,dels:141,reviews:[{by:'aito',s:'approved',h:6,body:'Scroll performance is much better on the 5k-row fixture. Approving.'}]},
+{n:126,repo:'acme/tokens',by:'aito',title:'Add dark-mode elevation tokens',status:'review',ci:'running',opened:40,branch:'feat/elevation-dark',adds:64,dels:8,reviews:[{by:'mchen',s:'comment',h:18,body:'Can we keep the old names as aliases for one release?'}]},
+{n:123,repo:'acme/api',by:'rsingh',title:'Add webhook retry with exponential backoff',status:'review',ci:'pass',opened:52,branch:'feat/webhook-retry',adds:318,dels:47,reviews:[{by:'lpetrov',s:'changes',h:30,body:'The backoff cap should be configurable, and retries need jitter so we don’t retry in lockstep.'},{by:'mchen',s:'comment',h:26,body:'Agree on jitter. Please also log the attempt number.'}]},
+{n:128,repo:'acme/api',by:'mchen',title:'Token bucket rate limiter for public API',status:'merged',ci:'pass',opened:30,merged:4,branch:'feat/rate-limiter',adds:521,dels:66,reviews:[{by:'okafor',s:'approved',h:8},{by:'rsingh',s:'approved',h:7,body:'Good coverage on the refill edge cases.'}]},
+{n:125,repo:'acme/web',by:'okafor',title:'Fix session expiry redirect loop',status:'merged',ci:'pass',opened:50,merged:22,branch:'fix/session-expiry',adds:41,dels:19,reviews:[{by:'lpetrov',s:'approved',h:24}]},
+{n:124,repo:'acme/infra',by:'jhale',title:'Split staging and prod state buckets',status:'merged',ci:'pass',opened:96,merged:70,branch:'chore/split-state',adds:88,dels:54,reviews:[{by:'rsingh',s:'approved',h:72}]},
+{n:122,repo:'acme/api',by:'lpetrov',title:'Paginate /events endpoint',status:'merged',ci:'pass',opened:140,merged:100,branch:'feat/events-pagination',adds:204,dels:73,reviews:[{by:'okafor',s:'changes',h:120,body:'The cursor should be opaque, not a raw offset.'},{by:'mchen',s:'approved',h:104}]},
+{n:121,repo:'acme/tokens',by:'rsingh',title:'Rename spacing scale to t-shirt sizes',status:'closed',ci:'pass',opened:150,closed:80,branch:'refactor/spacing-names',adds:120,dels:120,reviews:[{by:'aito',s:'changes',h:110,body:'This breaks every consumer. Let’s settle it in the RFC first.'}]},
+{n:119,repo:'acme/web',by:'mchen',title:'Experiment: SSR for dashboard shell',status:'closed',ci:'fail',opened:160,closed:130,branch:'exp/ssr-shell',adds:690,dels:212,reviews:[]}];
+function build(){
+  const r=mkRng(11),hex=()=>Array.from({length:7},()=>'0123456789abcdef'[Math.floor(r()*16)]).join(''),pick=a=>a[Math.floor(r()*a.length)];
+  const ev=[];
+  PRS.forEach(pr=>{
+    const pool=FILES[pr.repo],k=3+(pr.n%3);let A=pr.adds,Dl=pr.dels;pr.files=[];
+    for(let i=0;i<k;i++){const last=i===k-1,a=last?A:Math.round(A*(.3+r()*.3)),d=last?Dl:Math.round(Dl*(.3+r()*.3));A-=a;Dl-=d;pr.files.push({path:pool[(i+pr.n)%pool.length],a,d})}
+    pr.fileCount=k+Math.floor(r()*8);
+    const last=[...pr.reviews].sort((a,b)=>a.h-b.h).find(x=>x.s!=='comment');pr.rv=last?last.s:'pending';
+    const b={repo:pr.repo,pr:pr.n,title:pr.title,branch:pr.branch,adds:pr.adds,dels:pr.dels,files:pr.files,fileCount:pr.fileCount};
+    ev.push({...b,type:'push',author:pr.by,ts:NOW-(pr.opened+.4)*H,commits:[{sha:hex(),msg:pr.title},{sha:hex(),msg:'Add tests'},{sha:hex(),msg:'Address lint warnings'}].slice(0,1+pr.n%3)});
+    ev.push({...b,type:'pr_open',author:pr.by,ts:NOW-pr.opened*H});
+    pr.reviews.forEach(v=>ev.push({...b,type:'review',author:v.by,ts:NOW-v.h*H,review:v.s,body:v.body||''}));
+    if(pr.merged!=null){ev.push({...b,type:'pr_merge',author:pr.by,ts:NOW-pr.merged*H});ev.push({type:'push',repo:pr.repo,branch:'main',author:pr.by,pr:pr.n,ts:NOW-(pr.merged-.03)*H,commits:[{sha:hex(),msg:`Merge pull request #${pr.n} from ${pr.branch}`}]})}
+    if(pr.closed!=null)ev.push({...b,type:'pr_close',author:pr.by,ts:NOW-pr.closed*H});
+  });
+  ev.push({type:'push',repo:'acme/api',branch:'main',author:'okafor',ts:NOW-1.3*H,commits:[{sha:hex(),msg:'Guard against null org in audit log writer'}]});
+  ev.push({type:'push',repo:'acme/web',branch:'feat/settings-forms',author:'aito',ts:NOW-2.2*H,commits:[{sha:hex(),msg:'Port notification preferences to new Field'},{sha:hex(),msg:'Fix focus ring on select'}]});
+  ev.push({type:'push',repo:'acme/api',branch:'feat/webhook-retry',author:'rsingh',ts:NOW-5.5*H,commits:[{sha:hex(),msg:'Make backoff cap configurable'},{sha:hex(),msg:'Add full jitter to retry delay'}]});
+  ev.push({type:'push',repo:'acme/tokens',branch:'main',author:'aito',ts:NOW-46*H,commits:[{sha:hex(),msg:'Release v3.2.0'}]});
+  for(let d=0;d<62;d++){
+    const day=SOD-d*D,wd=new Date(day).getDay(),n=(wd===0||wd===6)?Math.floor(r()*2):2+Math.floor(r()*6);
+    for(let i=0;i<n;i++){
+      const ts=day+(8+r()*11)*H;if(ts>NOW-.5*H)continue;
+      const t=d<8?'push':pick(['push','push','push','push','pr_open','pr_merge','review','review']);
+      const repo=pick(REPOS),author=pick(AIDS);
+      if(t==='push'){const k=1+Math.floor(r()*4);ev.push({type:'push',repo,author,ts,branch:pick(BRANCHES),commits:Array.from({length:k},()=>({sha:hex(),msg:pick(MSGS)}))})}
+      else{const n2=60+Math.floor(r()*55),title=pick(MSGS),adds=10+Math.floor(r()*240),dels=Math.floor(r()*120);ev.push({type:t,repo,author,ts,pr:n2,title,branch:'feat/'+title.toLowerCase().split(' ').slice(0,2).join('-'),review:pick(['approved','approved','changes','comment']),body:'',adds,dels,fileCount:2+Math.floor(r()*6),files:[{path:pick(FILES[repo]),a:adds,d:dels}]})}
+    }
+  }
+  ev.sort((a,b)=>b.ts-a.ts);ev.forEach((e,i)=>e.id='e'+(ev.length-i));
+  const byId={};ev.forEach(e=>byId[e.id]=e);
+  return {events:ev,byId};
+}
+let DATA=build();
+// Swap the mock data for live GitHub data from server.mjs (/api/data). Mutates in place so module-level references stay valid.
+function applyLive(d){
+  NOW=d.now;SOD=(()=>{const x=new Date(NOW);x.setHours(0,0,0,0);return x.getTime()})();
+  REPOS.splice(0,REPOS.length,...d.repos);
+  Object.keys(PEOPLE).forEach(k=>delete PEOPLE[k]);Object.assign(PEOPLE,d.people);AIDS=Object.keys(PEOPLE);
+  PRS.splice(0,PRS.length,...d.prs);
+  const byId={};d.events.forEach(e=>byId[e.id]=e);DATA={events:d.events,byId};
+}
+const ini=id=>PEOPLE[id].name.split(' ').map(x=>x[0]).join('');
+const avc=id=>`oklch(0.8 0.08 ${PEOPLE[id].hue})`;
+const rel=ts=>{const m=Math.max(1,Math.round((NOW-ts)/6e4));if(m<60)return m+'m';const h=Math.round(m/60);if(h<24)return h+'h';return Math.round(h/24)+'d'};
+const fmtDay=t=>new Date(t).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+const hh=t=>String(new Date(t).getHours()).padStart(2,'0')+':00';
+const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
+const ymd=t=>{const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const parseYmd=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||'');return m?new Date(+m[1],+m[2]-1,+m[3]).getTime():NaN};
+function rangeCfg(k,cu){
+  if(k==='custom'){
+    const day=t=>new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    let a=parseYmd(cu&&cu.from),b=parseYmd(cu&&cu.to);
+    if(isNaN(b))b=SOD;if(isNaN(a))a=b-13*D;if(a>b)[a,b]=[b,a];
+    const n=Math.min(90,Math.round((b-a)/D)+1),s0=b-(n-1)*D,lab=n===1?day(b):day(s0)+' – '+day(b);
+    return{k,n,size:D,end:b+D,name:lab,long:lab,custom:lab};
+  }
+  if(k==='24h'){const d=new Date(NOW);d.setMinutes(0,0,0);let e=d.getTime()+H;if(new Date(e).getHours()%2)e+=H;return{k,n:12,size:2*H,end:e,name:'24h',long:'last 24 hours'}}
+  const n=k==='7d'?7:k==='30d'?30:14,end=SOD+D,s=end-n*D;
+  const lab=new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+new Date(NOW).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  return{k,n,size:D,end,name:k==='custom'?lab:k,long:k==='custom'?lab:`last ${n} days`,custom:lab};
+}
+const RV={approved:{l:'Approved',c:'var(--green)',b:'var(--green-bg)'},changes:{l:'Changes requested',c:'var(--red)',b:'var(--red-bg)'},pending:{l:'Review pending',c:'var(--amber)',b:'var(--amber-bg)'}};
+const CI={pass:{l:'CI passing',c:'var(--green)'},fail:{l:'CI failing',c:'var(--red)'},running:{l:'CI running',c:'var(--amber)'}};
+const STATUS={open:'open',review:'in review',merged:'merged',closed:'closed'};
+
+class Component extends DCLogic {
+  state={theme:null,range:'7d',custom:null,calMonth:null,calStart:null,repos:[],authors:[],bucket:null,stack:'none',menu:null,expanded:{},limit:20,showAll:{},hl:null,hover:null,chatOpen:true,messages:[],draft:'',ctx:null,lastSync:Date.now(),tick:Date.now(),refreshing:false,booting:true,busy:false};
+  threadRef=el=>{this.thread=el};
+  inputRef=el=>{this.input=el};
+  componentDidMount(){
+    this.applyTheme();this.rlEnd=Date.now()+761e3;
+    this.timer=setInterval(()=>{const now=Date.now();this.setState({tick:now});if(now-this.state.lastSync>5*60e3)this.refresh()},1000);
+    this.load(900);
+    this.onKeyG=e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();this.setState(s=>({chatOpen:!s.chatOpen}),()=>this.focus())}};
+    window.addEventListener('keydown',this.onKeyG);
+  }
+  componentWillUnmount(){clearInterval(this.timer);clearInterval(this.streamT);window.removeEventListener('keydown',this.onKeyG)}
+  componentDidUpdate(pp,ps){this.applyTheme();if(ps&&ps.messages!==this.state.messages&&this.thread)this.thread.scrollTop=this.thread.scrollHeight}
+  applyTheme(){const r=document.documentElement;let saved=null;try{saved=localStorage.getItem('theme')}catch(e){}r.dataset.theme=this.state.theme||saved||this.props.theme||'light';r.dataset.density=(this.props.density||'Comfortable').toLowerCase()}
+  focus(){setTimeout(()=>this.input&&this.input.focus(),30)}
+  view(){return this.state.liveErr||this.props.view||'Live'}
+  async load(minMs=0,force=false){
+    const t0=Date.now();let patch={lastSync:Date.now()};
+    try{
+      if(!/^https?:$/.test(location.protocol))throw 0;
+      const r=await fetch(force?'/api/data?refresh=1':'/api/data');
+      if(r.status===401)patch={liveErr:'Auth error'};
+      else if(r.ok){const j=await r.json();applyLive(j);this.live=true;patch={liveErr:null,lastSync:j.fetchedAt||Date.now()}}
+    }catch(e){/* no backend: keep the bundled sample data */}
+    setTimeout(()=>this.setState({booting:false,refreshing:false,...patch}),Math.max(0,minMs-(Date.now()-t0)));
+  }
+  refresh=()=>{if(this.state.refreshing||this.view()==='Rate limited')return;this.setState({refreshing:true});this.load(1100,true)};
+  scope(st=this.state){
+    const cfg=rangeCfg(st.range,st.custom),start=cfg.end-cfg.n*cfg.size,pstart=start-cfg.n*cfg.size;
+    const all=this.view()==='Empty'?[]:DATA.events;
+    const pR=e=>!st.repos.length||st.repos.includes(e.repo),pA=e=>!st.authors.length||st.authors.includes(e.author);
+    const inR=e=>e.ts>=start&&e.ts<cfg.end;
+    const cur=all.filter(e=>pR(e)&&pA(e)&&inR(e)),prev=all.filter(e=>pR(e)&&pA(e)&&e.ts>=pstart&&e.ts<start);
+    const curRepo=all.filter(e=>pR(e)&&inR(e));
+    const bi=e=>Math.min(cfg.n-1,Math.floor((e.ts-start)/cfg.size));
+    const list=st.bucket==null?cur:cur.filter(e=>bi(e)===st.bucket);
+    const prs=this.view()==='Empty'?[]:PRS.filter(p=>(!st.repos.length||st.repos.includes(p.repo))&&(!st.authors.length||st.authors.includes(p.by)));
+    return{cfg,start,cur,prev,curRepo,bi,list,prs,all,pR,pA};
+  }
+  calBase(s){const c=rangeCfg('custom',s.custom),t=new Date(s.calMonth!=null?s.calMonth:c.end-D);return new Date(t.getFullYear(),t.getMonth(),1)}
+  calView(st){
+    const c=rangeCfg('custom',st.custom),from=c.end-c.n*D,to=c.end-D,base=this.calBase(st),y=base.getFullYear(),mo=base.getMonth();
+    const lead=(base.getDay()+6)%7,cells=[];
+    for(let i=0;i<42;i++){
+      const d=new Date(y,mo,1-lead+i),t=d.getTime(),inMonth=d.getMonth()===mo;
+      if(i>=35&&!inMonth&&i%7===0)break;
+      const future=t>SOD,edge=t===from||t===to,mid=t>from&&t<to,single=from===to;
+      cells.push({label:d.getDate(),
+        bg:edge?'var(--text)':mid?'var(--sunken)':'transparent',hoverBg:edge?'var(--text)':future?'transparent':'var(--hover)',
+        color:edge?'var(--bg)':'var(--text)',opacity:future?.3:inMonth?1:.45,cursor:future?'default':'pointer',weight:edge||t===SOD?600:400,
+        ring:t===SOD&&!edge?'inset 0 0 0 1px var(--border2)':'none',
+        radius:single&&edge?'8px':t===from?'8px 0 0 8px':t===to?'0 8px 8px 0':mid?'0':'8px',
+        onClick:future?()=>{}:()=>this.setF(s=>s.calStart!=null
+          ?{custom:{from:ymd(Math.min(s.calStart,t)),to:ymd(Math.max(s.calStart,t))},calStart:null,bucket:null}
+          :{custom:{from:ymd(t),to:ymd(t)},calStart:t,bucket:null})});
+    }
+    const nm=new Date(y,mo+1,1).getTime()>SOD;
+    return{calTitle:base.toLocaleDateString('en-US',{month:'long',year:'numeric'}),calCells:cells,calNextOpacity:nm?.3:1,
+      calPrev:()=>this.setState(s=>({calMonth:new Date(this.calBase(s).getFullYear(),this.calBase(s).getMonth()-1,1).getTime()})),
+      calNext:nm?()=>{}:()=>this.setState(s=>({calMonth:new Date(this.calBase(s).getFullYear(),this.calBase(s).getMonth()+1,1).getTime()})),
+      customSummary:st.calStart!=null?'Pick an end date':`${c.n} day${c.n===1?'':'s'}`};
+  }
+  setF(patch){this.setState(s=>({...(typeof patch==='function'?patch(s):patch),limit:20}))}
+  addRepo(r){this.setF(s=>({repos:s.repos.includes(r)?s.repos:[...s.repos,r]}))}
+  addAuthor(a){this.setF(s=>({authors:s.authors.includes(a)?s.authors:[...s.authors,a]}))}
+  // ---- compare lives on its own page (/compare); these build deep links into it
+  cmpHref(o){return '/compare?'+new URLSearchParams(o)}
+  prHref(p){return this.cmpHref({repo:p.repo,tab:'pr',base:p.baseSha||p.base,head:p.headSha||p.branch,bl:`#${p.n} base (${p.base||'base'})`,hl:`#${p.n} ${p.branch}`})}
+  pushHref(e){const cs=e.commits,f=cs[cs.length-1].sha,l=cs[0].sha;return this.cmpHref({repo:e.repo,tab:'push',base:f+'^',head:l,bl:'before '+f,hl:`${l} (${e.branch})`})}
+  // ---- chat
+  ctxLabel(ctx){if(!ctx)return'';if(ctx.kind==='pr'){const p=PRS.find(x=>x.n===ctx.id);return`#${p.n} ${p.title}`}const e=DATA.byId[ctx.id];return e.type==='push'?`push ${e.commits[0].sha} · ${e.repo}@${e.branch}`:`#${e.pr} ${e.title}`}
+  ask(ctx){this.setState({chatOpen:true,ctx,draft:''},()=>this.focus())}
+  send=async(text)=>{
+    text=(text??this.state.draft).trim();if(!text||this.state.busy)return;
+    const ctx=this.state.ctx,sc=this.scope(),st=this.state;
+    const repos=new Set(sc.cur.map(e=>e.repo)).size;
+    const label=ctx?`Reading ${ctx.kind==='pr'?'PR #'+ctx.id:'this event'} and related activity…`:`Reading ${plural(sc.cur.length,'event')} across ${plural(repos,'repo')}…`;
+    const id=Date.now(),history=st.messages.slice(-6).filter(m=>m.role==='user'||m.parts).map(m=>m.role==='user'?{role:'user',text:m.text}:{role:'assistant',text:m.parts.map(x=>x.v).join('')});
+    this.setState(s=>({messages:[...s.messages,{id,role:'user',text,ctx:ctx?this.ctxLabel(ctx):''},{id:id+1,role:'ai',parts:[],shown:0,total:0,thinking:true,label}],draft:'',ctx:null,busy:true}));
+    clearInterval(this.streamT);
+    let parts=null;
+    if(this.live){
+      try{
+        const pr=ctx&&ctx.kind==='pr'?PRS.find(x=>x.n===ctx.id):null;
+        const r=await fetch('/api/ask',{method:'POST',body:JSON.stringify({question:text,ctx:ctx&&{...ctx,repo:pr&&pr.repo},repos:st.repos,authors:st.authors,history})});
+        const j=await r.json();
+        if(j.answer)parts=this.toParts(j.answer);
+      }catch(e){}
+    }
+    if(!parts)parts=this.answer(text,ctx,sc);
+    const total=parts.reduce((a,p)=>a+p.v.length,0);
+    this.updLast({parts,total,thinking:false});
+    this.streamT=setInterval(()=>{const m=this.state.messages[this.state.messages.length-1];if(!m){clearInterval(this.streamT);return}const n=Math.min(m.total,m.shown+4);this.updLast({shown:n});if(n>=m.total){clearInterval(this.streamT);this.setState({busy:false})}},16);
+  };
+  // Turn model text into message parts, linking "owner/repo#12" / "#12" to known PRs.
+  toParts(t){
+    const out=[],re=/(?:([\w.-]+\/[\w.-]+))?#(\d+)/g;let last=0,m;
+    while((m=re.exec(t))){
+      const pr=PRS.find(x=>x.n===+m[2]&&(!m[1]||x.repo===m[1]));if(!pr)continue;
+      if(m.index>last)out.push({t:'text',v:t.slice(last,m.index)});
+      out.push({t:'ref',kind:'pr',id:pr.n,v:'#'+pr.n});last=m.index+m[0].length;
+    }
+    if(last<t.length)out.push({t:'text',v:t.slice(last)});
+    return out;
+  }
+  updLast(p){this.setState(s=>{const ms=s.messages.slice();if(!ms.length)return null;ms[ms.length-1]={...ms[ms.length-1],...p};return{messages:ms}})}
+  answer(q,ctx,sc){
+    const T=v=>({t:'text',v}),R=(kind,id,v)=>({t:'ref',kind,id,v});
+    const evRef=e=>R('event',e.id,e.type==='push'?e.commits[0].sha:'#'+e.pr);
+    const prRef=p=>R('pr',p.n,'#'+p.n);
+    const nm=id=>PEOPLE[id].name;
+    const prAns=p=>{
+      const out=[prRef(p),T(` “${p.title}” by ${nm(p.by)} is ${STATUS[p.status]} in ${p.repo}. It changes ${p.fileCount} files (+${p.adds} −${p.dels}) on ${p.branch}.\n\n`)];
+      if(p.reviews.length){out.push(T('Reviews:\n'));[...p.reviews].sort((a,b)=>b.h-a.h).forEach(v=>{const e=DATA.events.find(x=>x.type==='review'&&x.pr===p.n&&x.author===v.by&&Math.abs(x.ts-(NOW-v.h*H))<1e3);out.push(T(`• ${nm(v.by)} ${v.s==='approved'?'approved':v.s==='changes'?'requested changes':'commented'} `),e?evRef(e):T(''),T(v.body?`: “${v.body}”\n`:'\n'))});out.push(T('\n'))}
+      else out.push(T('No one has reviewed it yet.\n\n'));
+      out.push(T(`${CI[p.ci].l}. `));
+      if(p.status==='merged')out.push(T(`Merged ${rel(NOW-p.merged*H)} ago.`));
+      else if(p.status==='closed')out.push(T(`Closed without merging ${rel(NOW-p.closed*H)} ago.`));
+      else if(p.rv==='changes'){const fix=DATA.events.find(e=>e.type==='push'&&e.branch===p.branch&&e.ts>NOW-(p.reviews.find(v=>v.s==='changes').h)*H);out.push(T(`It is waiting on ${nm(p.by)} to address the requested changes`));if(fix){out.push(T('. A follow-up push '),evRef(fix),T(` landed ${rel(fix.ts)} ago and looks like it addresses them; it needs a re-review.`))}else out.push(T('.'))}
+      else if(p.rv==='approved')out.push(T('It is approved and ready to merge.'));
+      else out.push(T('It needs a first review.'));
+      return out;
+    };
+    const blockAns=p=>{const r=[];if(p.status==='merged'||p.status==='closed')return[prRef(p),T(` is already ${STATUS[p.status]}.`)];
+      if(p.ci==='fail')r.push('CI is failing');if(p.ci==='running')r.push('CI is still running');if(p.rv==='changes')r.push('a reviewer requested changes');if(p.rv==='pending')r.push('it has no approving review');
+      return r.length?[prRef(p),T(` is blocked because ${r.join(', and ')}.`)]:[prRef(p),T(' has an approval and passing CI. Nothing is blocking the merge.')]};
+    if(ctx&&ctx.kind==='pr'){const p=PRS.find(x=>x.n===ctx.id);return /block/i.test(q)?blockAns(p):prAns(p)}
+    if(ctx&&ctx.kind==='event'){
+      const e=DATA.byId[ctx.id],p=PRS.find(x=>x.n===e.pr);
+      if(/else|branch/i.test(q)){const o=DATA.events.filter(x=>x.repo===e.repo&&x.branch===e.branch&&x.id!==e.id&&x.ts>NOW-30*D).slice(0,5);if(!o.length)return[T(`Nothing else touched ${e.branch} in ${e.repo} in the last 30 days.`)];const out=[T(`${plural(o.length,'other event')} on ${e.branch} in ${e.repo} in the last 30 days:\n\n`)];o.forEach(x=>out.push(T('• '),evRef(x),T(` ${nm(x.author)}, ${x.type==='push'?x.commits[0].msg:x.title} (${rel(x.ts)} ago)\n`)));return out}
+      if(e.type!=='push'&&p)return /block/i.test(q)?blockAns(p):prAns(p);
+      if(e.type!=='push')return[T(`${nm(e.author)} ${e.type==='pr_merge'?'merged':e.type==='review'?'reviewed':'opened'} #${e.pr} “${e.title}” in ${e.repo} ${rel(e.ts)} ago (+${e.adds} −${e.dels} across ${e.fileCount} files).`)];
+      const out=[T(`${nm(e.author)} pushed ${plural(e.commits.length,'commit')} to ${e.branch} in ${e.repo} ${rel(e.ts)} ago:\n\n`)];
+      e.commits.forEach(c=>out.push(T(`• ${c.sha} ${c.msg}\n`)));
+      if(p)out.push(T('\nThis branch belongs to '),prRef(p),T(`, which is ${STATUS[p.status]}.`));
+      else if(e.branch==='main')out.push(T('\nThis went straight to main without a pull request.'));
+      return out;
+    }
+    const m=q.match(/#(\d+)/);
+    if(m){const p=PRS.find(x=>x.n===+m[1]);return p?prAns(p):[T(`I can’t find PR #${m[1]} in the selected repositories.`)]}
+    if(/review/i.test(q)){
+      const rv=sc.cur.filter(e=>e.type==='review');if(!rv.length)return[T(`There were no reviews in the ${sc.cfg.long}.`)];
+      const by={};rv.forEach(e=>{(by[e.author]=by[e.author]||[]).push(e)});
+      const rank=Object.entries(by).sort((a,b)=>b[1].length-a[1].length);
+      const out=[T(`${plural(rv.length,'review')} from ${plural(rank.length,'person')} in the ${sc.cfg.long}:\n\n`)];
+      rank.forEach(([a,l],i)=>{const ap=l.filter(x=>x.review==='approved').length,ch=l.filter(x=>x.review==='changes').length;out.push(T(`${i+1}. ${nm(a)}: ${plural(l.length,'review')} (${ap} approved, ${ch} changes requested), latest `),evRef(l[0]),T('\n'))});
+      out.push(T(`\n${nm(rank[0][0])} has been reviewing the most.`));return out;
+    }
+    if(/main/i.test(q)){
+      const ms=sc.all.filter(e=>e.type==='push'&&e.branch==='main'&&e.ts>NOW-7*D&&sc.pR(e)&&sc.pA(e));
+      if(!ms.length)return[T('Nothing was pushed to main in the last 7 days.')];
+      const g={};ms.forEach(e=>{(g[e.repo]=g[e.repo]||[]).push(e)});
+      const out=[T(`${plural(ms.length,'push')} to main across ${plural(Object.keys(g).length,'repo')} in the last 7 days.\n\n`)];
+      Object.entries(g).sort((a,b)=>b[1].length-a[1].length).forEach(([r,l])=>out.push(T(`• ${r}: ${plural(l.length,'push')}, most recently `),evRef(l[0]),T(` “${l[0].commits[0].msg}”\n`)));
+      const merged=PRS.filter(p=>p.merged!=null&&p.merged<7*24&&sc.pR(p)).sort((a,b)=>b.adds-a.adds)[0];
+      if(merged)out.push(T('\nThe largest change was '),prRef(merged),T(` “${merged.title}” (+${merged.adds} −${merged.dels}), merged ${rel(NOW-merged.merged*H)} ago.`));
+      return out;
+    }
+    const c=sc.cur;if(!c.length)return[T(`There’s no activity in the ${sc.cfg.long} for the current filters.`)];
+    const cnt=t=>c.filter(e=>e.type===t).length,top=(k)=>{const o={};c.forEach(e=>o[e[k]]=(o[e[k]]||0)+1);return Object.entries(o).sort((a,b)=>b[1]-a[1])[0][0]};
+    return[T(`In the ${sc.cfg.long}: ${plural(cnt('push'),'push')}, ${cnt('pr_open')} PRs opened, ${cnt('pr_merge')} merged and ${plural(cnt('review'),'review')}. The busiest repo is ${top('repo')} and the most active contributor is ${nm(top('author'))}.\n\nMost recent: `),evRef(c[0]),T(` ${nm(c[0].author)}, ${c[0].type==='push'?c[0].commits[0].msg:c[0].title}.`)];
+  }
+  goto(kind,id){
+    if(kind==='pr'){
+      const p=PRS.find(x=>x.n===id);
+      this.setState(s=>({hl:{kind,id},repos:s.repos.length&&!s.repos.includes(p.repo)?[]:s.repos,authors:s.authors.length&&!s.authors.includes(p.by)?[]:s.authors,showAll:{...s.showAll,[p.status]:true}}),()=>this.scrollTo(`[data-pr="${id}"]`));
+    }else{
+      const e=DATA.byId[id];
+      this.setState(s=>{const c=rangeCfg(s.range,s.custom),start=c.end-c.n*c.size;return{hl:{kind,id},bucket:null,repos:s.repos.length&&!s.repos.includes(e.repo)?[]:s.repos,authors:s.authors.length&&!s.authors.includes(e.author)?[]:s.authors,range:e.ts<start?'30d':s.range,expanded:{...s.expanded,[id]:true}}},()=>{
+        const i=this.scope().list.findIndex(x=>x.id===id);
+        this.setState(s=>({limit:Math.max(s.limit,i+3)}),()=>this.scrollTo(`[data-ev="${id}"]`));
+      });
+    }
+    clearTimeout(this.hlT);this.hlT=setTimeout(()=>this.setState({hl:null}),2600);
+  }
+  scrollTo(sel){requestAnimationFrame(()=>{const el=document.querySelector(sel);if(el)window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-130,behavior:'smooth'})})}
+  renderVals(){
+    const st=this.state,view=this.view(),sc=this.scope(),{cfg,start,cur,prev,bi}=sc;
+    let savedT=null;try{savedT=localStorage.getItem('theme')}catch(e){}
+    const theme=st.theme||savedT||this.props.theme||'light';
+    const isLoading=view==='Loading'||st.booting,isAuth=view==='Auth error',isReady=!isLoading;
+    const stop=e=>e.stopPropagation();
+    // series
+    const ser=(l,f)=>{const a=Array(cfg.n).fill(0);l.forEach(e=>{if(f(e))a[bi(e)]++});return a};
+    const spark=a=>{const mx=Math.max(1,...a),pts=a.map((v,i)=>`${(i/Math.max(1,a.length-1)*96).toFixed(1)},${(30-v/mx*26).toFixed(1)}`);return{spark:pts.join(' '),area:`M0,32 L${pts.join(' L')} L96,32 Z`}};
+    const pct=(a,b)=>b?`${a>=b?'↑':'↓'} ${Math.abs(Math.round((a-b)/b*100))}%`:(a?'↑ new':'—');
+    const prevName=cfg.k==='custom'?`vs prev ${cfg.n}d`:`vs prev ${cfg.name}`;
+    const pushes=cur.filter(e=>e.type==='push'),merges=cur.filter(e=>e.type==='pr_merge');
+    const people=new Set(cur.map(e=>e.author)).size,pPeople=new Set(prev.map(e=>e.author)).size;
+    const openPRs=sc.prs.filter(p=>p.status==='open'||p.status==='review').length,opened=cur.filter(e=>e.type==='pr_open').length;
+    const stats=[
+      {label:'Pushes',value:pushes.length,delta:pct(pushes.length,prev.filter(e=>e.type==='push').length),vs:prevName,...spark(ser(cur,e=>e.type==='push'))},
+      {label:'Open pull requests',value:openPRs,delta:`+${opened}`,vs:`opened in ${cfg.k==='custom'?'range':cfg.name}`,...spark(ser(cur,e=>e.type==='pr_open'))},
+      {label:'Merged pull requests',value:merges.length,delta:pct(merges.length,prev.filter(e=>e.type==='pr_merge').length),vs:prevName,...spark(ser(cur,e=>e.type==='pr_merge'))},
+      {label:'Active contributors',value:people,delta:people===pPeople?'±0':`${people>pPeople?'+':'−'}${Math.abs(people-pPeople)}`,vs:prevName,...spark(Array.from({length:cfg.n},(_,i)=>new Set(cur.filter(e=>bi(e)===i).map(e=>e.author)).size))}
+    ].map(s=>({...s,loading:isLoading,ready:isReady}));
+    // chart
+    const keys=st.stack==='repo'?REPOS:st.stack==='author'?AIDS:['all'];
+    const keyOf=e=>st.stack==='repo'?e.repo:st.stack==='author'?e.author:'all';
+    const counts=Array.from({length:cfg.n},()=>({}));pushes.forEach(e=>{const c=counts[bi(e)];c[keyOf(e)]=(c[keyOf(e)]||0)+1});
+    const totals=counts.map(c=>Object.values(c).reduce((a,b)=>a+b,0));
+    const yMax=Math.max(2,Math.ceil(Math.max(...totals)/2)*2);
+    const bStart=i=>start+i*cfg.size;
+    const blabel=i=>cfg.k==='24h'?`${hh(bStart(i))}–${hh(bStart(i)+cfg.size)}`:fmtDay(bStart(i));
+    const every=cfg.n>20?3:cfg.n>10?2:1;
+    const bars=totals.map((t,i)=>({h:t/yMax*100,op:st.bucket!=null&&st.bucket!==i?.3:1,colBg:st.hover===i?'var(--sunken)':'transparent',
+      segs:t?keys.map((k,ki)=>({f:counts[i][k]||0,color:st.stack==='none'?'var(--c0)':SER[ki]})).filter(s=>s.f):[],
+      title:`${blabel(i)}: ${plural(t,'push')}`,
+      label:(cfg.n-1-i)%every===0?(cfg.k==='24h'?hh(bStart(i)):cfg.k==='7d'?new Date(bStart(i)).toLocaleDateString('en-US',{weekday:'short'}):String(new Date(bStart(i)).getDate())):'',
+      labelColor:st.bucket===i?'var(--text)':'var(--faint)',
+      onClick:()=>this.setState(s=>({bucket:s.bucket===i?null:i,limit:20})),onEnter:()=>this.setState({hover:i})}));
+    const legend=st.stack==='none'?[]:keys.map((k,ki)=>({name:st.stack==='repo'?k:PEOPLE[k].name,color:SER[ki],font:st.stack==='repo'?"'Geist Mono',monospace":'inherit'})).filter((l,ki)=>pushes.some(e=>keyOf(e)===keys[ki]));
+    const seg=(active)=>({bg:active?'var(--panel)':'transparent',color:active?'var(--text)':'var(--muted)',sh:active?'0 1px 2px rgba(0,0,0,.12)':'none'});
+    // timeline
+    const list=sc.list,shown=list.slice(0,st.limit);
+    const events=shown.map(e=>{
+      const p=PEOPLE[e.author],rvc=e.review==='approved'?'green':e.review==='changes'?'red':null;
+      const verb=e.type==='push'?`pushed ${plural(e.commits.length,'commit')} to`:e.type==='pr_open'?`opened #${e.pr} in`:e.type==='pr_merge'?`merged #${e.pr} in`:e.type==='pr_close'?`closed #${e.pr} in`:e.review==='approved'?`approved #${e.pr} in`:e.review==='changes'?`requested changes on #${e.pr} in`:`commented on #${e.pr} in`;
+      const col=e.type==='pr_open'?'purple':e.type==='pr_merge'?'green':e.type==='pr_close'?'red':e.type==='review'?rvc:null;
+      const open=!!st.expanded[e.id],isPR=e.type!=='push';
+      const mx=Math.max(1,...(e.files||[]).map(f=>f.a+f.d));
+      return{id:e.id,name:p.name,initials:ini(e.author),av:avc(e.author),verb,repo:e.repo,branch:e.branch,
+        msg:e.type==='push'?e.commits[0].msg:e.type==='review'&&e.body?e.body:e.title,time:rel(e.ts),abs:new Date(e.ts).toLocaleString('en-US'),
+        url:e.type==='push'?`https://github.com/${e.repo}/commit/${e.commits[0].sha}`:`https://github.com/${e.repo}/pull/${e.pr}`,
+        iPush:e.type==='push',iOpen:e.type==='pr_open',iMerge:e.type==='pr_merge',iClose:e.type==='pr_close',iReview:e.type==='review',
+        iconColor:col?`var(--${col})`:'var(--muted)',iconBg:col?`var(--${col}-bg)`:'var(--sunken)',
+        bg:st.hl&&st.hl.kind==='event'&&st.hl.id===e.id?'var(--hl)':'transparent',
+        open,chev:open?'rotate(90deg)':'none',
+        hasCommits:open&&e.type==='push',commits:(e.commits||[]).map(c=>({...c,url:`https://github.com/${e.repo}/commit/${c.sha}`})),
+        hasFiles:open&&isPR&&e.type!=='review',files:(e.files||[]).map(f=>{const n=Math.max(1,Math.round((f.a+f.d)/mx*5)),g=Math.round(n*f.a/Math.max(1,f.a+f.d));return{...f,boxes:Array.from({length:5},(_,i)=>i<g?'var(--green)':i<n?'var(--red)':'var(--border2)')}}),
+        adds:e.adds,dels:e.dels,fileCount:e.fileCount,
+        hasBody:open&&e.type==='review',body:e.body||(e.review==='approved'?'Approved without comment.':'No comment.'),pr:e.pr,title:e.title,
+        toggle:()=>this.setState(s=>({expanded:{...s.expanded,[e.id]:!s.expanded[e.id]}})),
+        onAuthor:ev=>{ev.stopPropagation();this.addAuthor(e.author)},onRepo:ev=>{ev.stopPropagation();this.addRepo(e.repo)},
+        onAsk:ev=>{ev.stopPropagation();this.ask({kind:'event',id:e.id})},
+        canCompare:e.type==='push'&&!!(e.commits&&e.commits.length)||!!PRS.find(x=>x.n===e.pr&&x.repo===e.repo),
+        onCompare:ev=>{ev.stopPropagation();const pr=e.type!=='push'&&PRS.find(x=>x.n===e.pr&&x.repo===e.repo);location.href=pr?this.prHref(pr):this.pushHref(e)},stop};
+    });
+    // PRs
+    const groups=[['open','Open','var(--purple)'],['review','In review','var(--amber)'],['merged','Merged','var(--green)'],['closed','Closed','var(--red)']].map(([k,name,color])=>{
+      const all=sc.prs.filter(p=>p.status===k),cap=(k==='merged'||k==='closed')&&!st.showAll[k]?2:99,vis=all.slice(0,cap);
+      return{name,color,count:all.length,iOpen:k==='open'||k==='review',iMerge:k==='merged',iClose:k==='closed',hasMore:all.length>2&&(k==='merged'||k==='closed'),
+        moreLabel:st.showAll[k]?'Show less':`Show ${all.length-2} more`,toggleMore:()=>this.setState(s=>({showAll:{...s.showAll,[k]:!s.showAll[k]}})),
+        prs:vis.map(p=>({n:p.n,title:p.title,repo:p.repo,name:PEOPLE[p.by].name,initials:ini(p.by),av:avc(p.by),url:`https://github.com/${p.repo}/pull/${p.n}`,
+          age:p.status==='merged'?`merged ${rel(NOW-p.merged*H)} ago`:p.status==='closed'?`closed ${rel(NOW-p.closed*H)} ago`:`opened ${rel(NOW-p.opened*H)} ago`,
+          rvLabel:RV[p.rv].l,rvColor:RV[p.rv].c,rvBg:RV[p.rv].b,ciLabel:CI[p.ci].l,ciColor:CI[p.ci].c,adds:p.adds,dels:p.dels,
+          bg:st.hl&&st.hl.kind==='pr'&&st.hl.id===p.n?'var(--hl)':'transparent',
+          onRepo:()=>this.addRepo(p.repo),onAuthor:()=>this.addAuthor(p.by),onAsk:()=>this.ask({kind:'pr',id:p.n}),onCompare:()=>{location.href=this.prHref(p)}}))};
+    }).filter(g=>g.count);
+    // contributors
+    const byA={};sc.curRepo.forEach(e=>{(byA[e.author]=byA[e.author]||[]).push(e)});
+    const cellMax=Math.max(1,...Object.values(byA).flatMap(l=>{const a=Array(cfg.n).fill(0);l.forEach(e=>a[bi(e)]++);return a}));
+    const contributors=Object.entries(byA).sort((a,b)=>b[1].length-a[1].length).map(([a,l],i)=>{
+      const cells=Array(cfg.n).fill(0);l.forEach(e=>cells[bi(e)]++);
+      const pu=l.filter(e=>e.type==='push').length,rv=l.filter(e=>e.type==='review').length,pr=l.filter(e=>e.type.startsWith('pr_')).length;
+      return{rank:i+1,name:PEOPLE[a].name,initials:ini(a),av:avc(a),total:l.length,breakdown:[pu&&`${pu} push`,pr&&`${pr} PR`,rv&&`${rv} rev`].filter(Boolean).join(' · '),
+        bg:st.authors.includes(a)?'var(--sunken)':'transparent',onClick:()=>this.setF(s=>({authors:s.authors.includes(a)?s.authors.filter(x=>x!==a):[...s.authors,a]})),
+        cells:cells.map((v,j)=>({title:`${blabel(j)}: ${v}`,bg:v?`color-mix(in oklch,var(--text) ${Math.round(18+v/cellMax*72)}%,var(--sunken))`:'var(--sunken)'}))};
+    });
+    // header
+    const chips=[...st.repos.map(r=>({kind:'repo',label:r,font:"'Geist Mono',monospace",remove:()=>this.setF(s=>({repos:s.repos.filter(x=>x!==r)}))})),
+      ...st.authors.map(a=>({kind:'author',label:PEOPLE[a].name,font:'inherit',remove:()=>this.setF(s=>({authors:s.authors.filter(x=>x!==a)}))})),
+      ...(st.bucket!=null?[{kind:cfg.k==='24h'?'time':'day',label:blabel(st.bucket),font:'inherit',remove:()=>this.setState({bucket:null})}]:[])];
+    const secs=Math.round((st.tick-st.lastSync)/1000);
+    const rl=view==='Rate limited',rem=Math.max(0,Math.round(((this.rlEnd||Date.now()+761e3)-st.tick)/1000));
+    const repoScope=st.repos.length?st.repos.join(', '):'all repos';
+    // chat
+    const ms=st.messages.map(m=>{
+      if(m.role==='user')return{isUser:true,isAi:false,text:m.text,hasCtx:!!m.ctx,ctxLabel:m.ctx};
+      let left=m.shown;const parts=[];
+      for(const p of m.parts){if(left<=0)break;const v=p.v.slice(0,left);left-=p.v.length;parts.push({isText:p.t==='text',isRef:p.t==='ref',v,onClick:p.t==='ref'?()=>this.goto(p.kind,p.id):null})}
+      return{isUser:false,isAi:true,thinking:m.thinking,label:m.label,answering:!m.thinking,streaming:!m.thinking&&m.shown<m.total,parts};
+    });
+    const ctxIsPR=st.ctx&&(st.ctx.kind==='pr'||DATA.byId[st.ctx.id].type!=='push');
+    const ctxSug=!st.ctx?[]:ctxIsPR?['Summarise this PR','What’s blocking the merge?']:['Summarise this push','What else touched this branch?'];
+    const emptyFiltered=chips.length>0;
+    return{
+      kbdHint:/Mac|iPhone|iPad/.test(navigator.platform||'')?'⌘ K':'Ctrl K',
+      isDark:theme==='dark',isLight:theme!=='dark',toggleTheme:()=>{const n=theme==='dark'?'light':'dark';try{localStorage.setItem('theme',n)}catch(e){}this.setState({theme:n})},
+      repoLabel:!st.repos.length?'All repositories':st.repos.length===1?st.repos[0]:`${st.repos.length} repositories`,
+      repoMenuOpen:st.menu==='repo',authorMenuOpen:st.menu==='author',anyMenu:!!st.menu,closeMenus:()=>this.setState({menu:null}),
+      toggleRepoMenu:()=>this.setState(s=>({menu:s.menu==='repo'?null:'repo'})),toggleAuthorMenu:()=>this.setState(s=>({menu:s.menu==='author'?null:'author'})),
+      allBoxBg:st.repos.length?'transparent':'var(--text)',selectAllRepos:()=>this.setF({repos:[]}),
+      repoOptions:REPOS.map(r=>({name:r,count:sc.all.filter(e=>e.repo===r&&e.ts>=start&&e.ts<cfg.end&&sc.pA(e)).length,boxBg:st.repos.includes(r)?'var(--text)':'transparent',toggle:()=>this.setF(s=>({repos:s.repos.includes(r)?s.repos.filter(x=>x!==r):[...s.repos,r]}))})),
+      authorLabel:!st.authors.length?'All authors':st.authors.length===1?PEOPLE[st.authors[0]].name:`${st.authors.length} authors`,
+      allAuthorsBg:st.authors.length?'transparent':'var(--text)',clearAuthors:()=>this.setF({authors:[]}),
+      authorOptions:AIDS.map(a=>({name:PEOPLE[a].name,initials:ini(a),av:avc(a),boxBg:st.authors.includes(a)?'var(--text)':'transparent',toggle:()=>this.setF(s=>({authors:s.authors.includes(a)?s.authors.filter(x=>x!==a):[...s.authors,a]}))})),
+      ranges:['24h','7d','30d','custom'].map(k=>({label:k==='custom'?(st.range==='custom'?rangeCfg('custom',st.custom).custom:'Custom'):k,...seg(st.range===k),onClick:k==='custom'?()=>this.setF(s=>({range:'custom',bucket:null,calMonth:null,calStart:null,menu:s.menu==='range'?null:'range'})):()=>this.setF({range:k,bucket:null,menu:null})})),
+      rangeMenuOpen:st.menu==='range',closeRange:()=>this.setState({menu:null}),
+      ...this.calView(st),
+      presets:[['Last 14 days',14],['Last 60 days',60],['This month',0]].map(([l,n])=>({label:l,onClick:()=>this.setF({custom:n?{from:ymd(SOD-(n-1)*D),to:ymd(SOD)}:{from:ymd(new Date(SOD).setDate(1)),to:ymd(SOD)},calMonth:null,calStart:null,bucket:null})})),
+      syncedText:isAuth?'Sync failed':rl?'Cached 14:05':st.refreshing?'Syncing…':secs<5?'Synced just now':secs<60?`Synced ${secs}s ago`:`Synced ${Math.floor(secs/60)}m ago`,
+      syncDot:isAuth?'var(--red)':rl?'var(--amber)':st.refreshing?'var(--amber)':'var(--green)',
+      refresh:this.refresh,refreshLabel:isAuth?'Retry':'Refresh',spinAnim:st.refreshing?'spin .8s linear infinite':'none',refreshOpacity:rl?.5:1,
+      chips,hasChips:chips.length>0,clearAll:()=>this.setF({repos:[],authors:[],bucket:null}),
+      isAuthError:isAuth,showDash:!isAuth,isRateLimited:rl,rlReset:`${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')}`,
+      stats,isLoading,isReady,skelBars:[40,65,30,80,55,70,45],skelRows:[{a:62,b:40},{a:48,b:70},{a:70,b:35},{a:55,b:60},{a:40,b:50},{a:66,b:45}],skelCards:[{a:80},{a:64},{a:72},{a:58}],
+      chartSub:st.hover!=null?`${blabel(st.hover)} · ${plural(totals[st.hover],'push')}`:`${plural(pushes.length,'push')} · ${cfg.long}`,
+      chartLeave:()=>this.setState({hover:null}),bars,yMax,yMid:yMax/2,chartEmpty:!pushes.length,legend,hasLegend:legend.length>0,
+      stackModes:[['none','None'],['repo','Repo'],['author','Author']].map(([k,l])=>({label:l,...seg(st.stack===k),onClick:()=>this.setState({stack:k})})),
+      events:isReady?events:[],eventCount:isReady?plural(list.length,'event'):'',noEvents:isReady&&!list.length,
+      hasMore:isReady&&list.length>st.limit,moreCount:Math.min(20,list.length-st.limit),showMore:()=>this.setState(s=>({limit:s.limit+20})),
+      hasBucket:st.bucket!=null,bucketLabel:st.bucket!=null?blabel(st.bucket):'',clearBucket:()=>this.setState({bucket:null}),
+      emptyTitle:st.bucket!=null?`No activity on ${blabel(st.bucket)}`:`No activity in the ${cfg.long}`,
+      emptySub:emptyFiltered?'Nothing matches the current filters. Try removing a filter or widening the time range.':`Nothing was pushed, opened or reviewed in ${repoScope} during this period.`,
+      canWiden:st.range!=='30d',widen:()=>this.setF({range:'30d',bucket:null}),
+      prGroups:isReady?groups:[],prCount:isReady?`${openPRs} open`:'',prEmpty:isReady&&!groups.length,
+      contributors:isReady?contributors:[],contribEmpty:isReady&&!contributors.length,contribSub:`events · ${cfg.name}`,
+      chatOpen:st.chatOpen,chatClosed:!st.chatOpen,openChat:()=>this.setState({chatOpen:true},()=>this.focus()),closeChat:()=>this.setState({chatOpen:false}),
+      chatScope:`${cfg.long} · ${repoScope}${st.authors.length?' · '+st.authors.map(a=>PEOPLE[a].name.split(' ')[0]).join(', '):''}`,
+      messages:ms,hasMessages:ms.length>0,noMessages:!ms.length,clearChat:()=>{clearInterval(this.streamT);this.setState({messages:[],busy:false})},
+      suggestions:['What changed on main this week?','Summarise PR #123','Who’s been reviewing the most?'].map(l=>({label:l,onClick:()=>this.send(l)})),
+      hasCtx:!!st.ctx,ctxLabel:this.ctxLabel(st.ctx),clearCtx:()=>this.setState({ctx:null}),ctxSuggestions:ctxSug.map(l=>({label:l,onClick:()=>this.send(l)})),
+      draft:st.draft,onDraft:e=>this.setState({draft:e.target.value}),onKey:e=>{if(e.key==='Enter'){e.preventDefault();this.send()}},sendDraft:()=>this.send(),
+      sendBg:st.draft.trim()&&!st.busy?'var(--text)':'var(--faint)',
+            threadRef:this.threadRef,inputRef:this.inputRef
+    };
+  }
+}
+</script>
+</body>
+</html>

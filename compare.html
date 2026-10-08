@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compare · Activity Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#f7f7f5;--panel:#ffffff;--sunken:#f1f1ee;--hover:#f5f5f2;--border:#e7e7e3;--border2:#d5d5d0;--text:#17171a;--muted:#5f5f67;--faint:#8e8e96;--green:#1d8a4b;--purple:#7445d6;--red:#cc3a30;--amber:#a86f05;--green-bg:color-mix(in srgb,var(--green) 11%,transparent);--purple-bg:color-mix(in srgb,var(--purple) 11%,transparent);--red-bg:color-mix(in srgb,var(--red) 10%,transparent);--amber-bg:color-mix(in srgb,var(--amber) 13%,transparent);--hl:color-mix(in srgb,var(--amber) 16%,transparent);--spark:color-mix(in srgb,var(--text) 7%,transparent);--shimmer:#e9e9e5;--shadow:0 1px 2px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.08);--shadow-lg:0 2px 6px rgba(0,0,0,.06),0 24px 60px rgba(0,0,0,.16);--c0:oklch(0.33 0.01 270);--c1:oklch(0.42 0.08 262);--c2:oklch(0.66 0.08 215);--c3:oklch(0.76 0.1 85);--c4:oklch(0.62 0.1 30);--c5:oklch(0.58 0.07 155);--c6:oklch(0.72 0.05 310);--py:10px}
+html[data-theme=dark]{--bg:#0a0a0b;--panel:#111113;--sunken:#18181b;--hover:#16161a;--border:#232327;--border2:#313137;--text:#ececee;--muted:#a3a3ac;--faint:#73737c;--green:#3fbf73;--purple:#a685f2;--red:#f2675e;--amber:#e3a83a;--shimmer:#222226;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.5);--shadow-lg:0 2px 6px rgba(0,0,0,.4),0 24px 60px rgba(0,0,0,.6);--c0:oklch(0.84 0.01 270);--c1:oklch(0.7 0.09 262);--c2:oklch(0.74 0.08 215);--c3:oklch(0.8 0.1 85);--c4:oklch(0.68 0.11 30);--c5:oklch(0.68 0.08 155);--c6:oklch(0.62 0.05 310)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Geist,ui-sans-serif,system-ui,sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased;transition:background .2s}
+a{color:inherit;text-decoration:none}
+a:hover{color:var(--text)}
+button,input{font:inherit;color:inherit}
+input::placeholder{color:var(--faint)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+.mono{font-family:'Geist Mono',monospace}
+.btn{height:30px;padding:0 10px;display:flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--panel);border-radius:7px;cursor:pointer;font-size:12.5px}
+.btn:hover{border-color:var(--border2)}
+.seg{display:flex;align-items:center;gap:2px;padding:2px;background:var(--sunken);border:1px solid var(--border);border-radius:7px;height:30px}
+.seg>*{height:24px;padding:0 9px;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:500;display:flex;align-items:center;gap:5px;white-space:nowrap;background:transparent;color:var(--muted)}
+.seg>.on{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ph{display:flex;align-items:center;gap:10px;padding:11px 14px;flex-wrap:wrap}
+.ph.b{border-bottom:1px solid var(--border)}
+.row{border-top:1px solid var(--border)}
+.hov:hover{background:var(--hover)}
+.menu-item{width:100%;height:32px;display:flex;align-items:center;gap:9px;padding:0 9px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-size:12.5px;text-align:left}
+.menu-item:hover{background:var(--hover)}
+.box{width:14px;height:14px;border-radius:4px;border:1px solid var(--border2);color:var(--bg);display:grid;place-items:center}
+.box.on{background:var(--text);border-color:var(--text)}
+.sk{background:linear-gradient(90deg,var(--sunken) 30%,var(--shimmer) 50%,var(--sunken) 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite;border-radius:4px}
+.slot{flex:1;min-width:0;text-align:left;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--sunken);cursor:pointer}
+.slot.active{border-color:var(--text)}
+.slot small{display:block;font-size:11px;color:var(--faint)}
+.slot span{display:block;font-family:'Geist Mono',monospace;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.pick{width:100%;text-align:left;padding:10px 14px;border:none;border-top:1px solid var(--border);background:transparent;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.pick:hover,.pick.on{background:var(--hover)}
+.pick b{font-weight:500;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick small{font-size:12px;color:var(--muted)}
+.fbtn{width:100%;display:flex;gap:10px;align-items:center;padding:10px 14px;border:none;background:transparent;cursor:pointer;text-align:left}
+.fbtn:hover{background:var(--hover)}
+.chev{flex:none;color:var(--faint);transition:transform .15s}
+.diff{margin:0 14px 12px;border:1px solid var(--border);border-radius:8px;overflow:auto;font-family:'Geist Mono',monospace;font-size:11.5px;line-height:1.5;max-height:70vh}
+.diff div{padding:0 10px;white-space:pre;min-width:max-content}
+.diff .a{background:var(--green-bg)}.diff .d{background:var(--red-bg)}.diff .h{color:var(--purple);background:var(--sunken)}
+.diff .u{display:flex;min-width:max-content;padding:0}
+.u .n{flex:none;width:44px;padding:0 8px 0 0;text-align:right;color:var(--faint);user-select:none;-webkit-user-select:none}
+.u .n+.n{border-right:1px solid var(--border);margin-right:8px}
+.u .t{white-space:pre;padding-right:10px}
+.diff.sel-l .sr>div:last-child,.diff.sel-r .sr>div:first-child{user-select:none;-webkit-user-select:none}
+.sr .n{user-select:none;-webkit-user-select:none}
+.diff.split div{padding:0;white-space:normal;min-width:0}
+.sr{display:grid;grid-template-columns:1fr 1fr}
+.sr>div{display:flex;min-width:0}.sr>div+div{border-left:1px solid var(--border)}
+.sr .n{flex:none;width:38px;padding:0 6px;text-align:right;color:var(--faint);user-select:none}
+.sr .t{flex:1;min-width:0;padding:0 8px;white-space:pre-wrap;word-break:break-all}
+.sr .a{background:var(--green-bg)}.sr .d{background:var(--red-bg)}.sr .e{background:var(--sunken)}
+.sr.h{display:block}.sr.h .t{padding:0 10px}
+.diff .hl,.sr.hl>div{box-shadow:inset 3px 0 var(--amber);background:var(--hl)!important}
+.cite{border:none;background:var(--hl);color:inherit;border-radius:4px;padding:0 4px;cursor:pointer;font-family:'Geist Mono',monospace;font-size:11.5px}
+.fask{flex:none;height:22px;padding:0 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel);font-size:11.5px;color:var(--muted);display:flex;align-items:center}
+.fask:hover{color:var(--text);border-color:var(--border2)}
+#chat{position:fixed;right:20px;bottom:20px;z-index:40;width:var(--cw,380px);max-width:calc(100vw - 40px);height:var(--ch,min(540px,calc(100vh - 100px)));max-height:calc(100vh - 40px);display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--border2);border-radius:12px;box-shadow:var(--shadow-lg);overflow:hidden}
+#chat .rz{position:absolute;z-index:2}
+#chat .rz.l{left:-3px;top:12px;bottom:0;width:8px;cursor:ew-resize}
+#chat .rz.t{top:-3px;left:12px;right:0;height:8px;cursor:ns-resize}
+#chat .rz.c{left:-3px;top:-3px;width:16px;height:16px;cursor:nwse-resize}
+#chat .rz:hover,#chat .rz.on{background:color-mix(in srgb,var(--text) 14%,transparent)}
+#chat.big .msgs{padding:16px 22px}
+#chat .msgs{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.5}
+.m-u{align-self:flex-end;max-width:85%;min-width:0;background:var(--sunken);border-radius:12px 12px 3px 12px;padding:8px 12px;display:flex;flex-direction:column;gap:4px}
+.m-u .t{white-space:pre-wrap;overflow-wrap:anywhere}
+.m-u .c{font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted);overflow-wrap:anywhere;line-height:1.35}
+.m-a{word-break:break-word;line-height:1.6;display:flex;flex-direction:column;gap:10px;font-size:13px}
+.m-a p{margin:0;white-space:pre-wrap}
+.m-a h4{margin:4px 0 0;font-size:13px;font-weight:600}
+.m-a strong{font-weight:600}
+.m-a code{font-family:'Geist Mono',monospace;font-size:11.5px;background:var(--sunken);border:1px solid var(--border);border-radius:5px;padding:1px 5px;white-space:normal;overflow-wrap:anywhere}
+.m-a ol,.m-a ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.m-a li{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;background:var(--sunken);border:1px solid var(--border);border-radius:9px}
+.m-a li>div{flex:1;min-width:0}
+.m-a ul li{padding:0;background:none;border:none;gap:8px}
+.m-a ul{gap:5px}
+.m-a ol .b{flex:none;width:20px;height:20px;border-radius:50%;background:var(--text);color:var(--bg);font-size:11px;font-weight:600;display:grid;place-items:center;margin-top:1px}
+.m-a ul .b{flex:none;width:6px;height:6px;border-radius:50%;background:var(--faint);margin-top:8px;margin-left:5px;margin-right:2px}
+.m-a .cite{border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:5px;padding:0 5px;cursor:pointer;font-family:'Geist Mono',monospace;font-size:11px;line-height:1.5;overflow-wrap:anywhere;text-align:left}
+.m-a .cite:hover{background:var(--hl);border-color:var(--amber)}
+.m-a .sha{font-family:'Geist Mono',monospace;font-size:11px;color:var(--purple);background:var(--purple-bg);border-radius:5px;padding:1px 5px}
+.m-a .sha:hover{color:var(--purple);text-decoration:underline}
+.qk{height:24px;padding:0 9px;border:1px solid var(--border);background:var(--sunken);border-radius:999px;cursor:pointer;font-size:11.5px;color:var(--muted)}
+.qk:hover{color:var(--text);border-color:var(--border2)}
+.cvdoc h1{font-size:19px;margin:0 0 6px;letter-spacing:-.01em}
+.cvdoc h2{font-size:14.5px;margin:20px 0 8px;padding-top:12px;border-top:1px solid var(--border)}
+.cvdoc p,.cvdoc li{font-size:13.5px;line-height:1.6}
+.cvdoc .m-a{font-size:13.5px}
+.ib{width:26px;height:26px;padding:0;justify-content:center;color:var(--muted);flex:none}
+.ib:hover{color:var(--text)}
+.hi{display:flex;align-items:center;gap:6px;padding:9px 10px;border:1px solid var(--border);border-radius:9px;background:var(--panel);cursor:pointer}
+.hi:hover{background:var(--hover)}
+.hi.cur{border-color:var(--text)}
+.hi .hm{flex:1;min-width:0}
+.hi b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi small{display:block;color:var(--faint);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi .ib{opacity:0}.hi:hover .ib{opacity:1}
+.rn{width:100%;height:24px;border:1px solid var(--border2);border-radius:6px;background:var(--panel);padding:0 6px;font:inherit;font-weight:500;outline:none}
+.think{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12.5px;padding:2px 0}
+.think .spark{width:14px;height:14px;color:var(--text);animation:pulse 1.4s ease-in-out infinite;flex:none}
+.think .dots{display:inline-flex;gap:3px}
+.think .dots i{width:4px;height:4px;border-radius:50%;background:var(--faint);animation:bounce 1.2s infinite ease-in-out}
+.think .dots i:nth-child(2){animation-delay:.15s}.think .dots i:nth-child(3){animation-delay:.3s}
+.think .el{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--faint);font-size:11.5px}
+@keyframes pulse{0%,100%{transform:scale(.8) rotate(0);opacity:.5}50%{transform:scale(1.1) rotate(45deg);opacity:1}}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-3px);opacity:1}}
+.caret{display:inline-block;width:6px;height:13px;margin-left:2px;vertical-align:-2px;background:var(--text);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.sug{text-align:left;padding:8px 10px;border:1px solid var(--border);background:var(--panel);border-radius:8px;cursor:pointer;font-size:12.5px}
+.sug:hover{background:var(--hover)}
+#askPop{position:fixed;z-index:50;display:none;height:28px;padding:0 10px;border-radius:7px;border:none;background:var(--text);color:var(--bg);font-size:12px;font-weight:500;cursor:pointer;box-shadow:var(--shadow)}
+.add{color:var(--green)}.del{color:var(--red)}
+.empty{padding:48px 20px 52px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+</style>
+</head>
+<body>
+<header style="position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border)">
+  <div style="max-width:1480px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <a href="/" style="display:flex;align-items:center;gap:8px;margin-right:10px">
+      <div style="width:22px;height:22px;border-radius:6px;background:var(--text);color:var(--bg);display:grid;place-items:center">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8.5h3l2-5 3 9 2-4h3"></path></svg>
+      </div>
+      <span style="font-weight:600;font-size:14px;letter-spacing:-.01em;white-space:nowrap">Activity Monitor</span>
+    </a>
+    <div style="position:relative">
+      <button class="btn" id="repoBtn" style="gap:7px">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" style="color:var(--muted)"><path d="M3 13V3.5A1.5 1.5 0 0 1 4.5 2H13v9.5H4.5A1.5 1.5 0 0 0 3 13a1.5 1.5 0 0 0 1.5 1.5H13"></path></svg>
+        <span id="repoLabel">Repository</span>
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--faint)"><path d="M4 6l4 4 4-4"></path></svg>
+      </button>
+      <div id="repoMenu" style="display:none;position:absolute;top:36px;left:0;z-index:30;width:max-content;min-width:260px;max-width:min(520px,calc(100vw - 40px));background:var(--panel);border:1px solid var(--border2);border-radius:9px;box-shadow:var(--shadow);padding:4px"></div>
+    </div>
+    <div class="seg">
+      <a href="/">Dashboard</a>
+      <a class="on" href="/compare">Compare</a>
+    </div>
+    <div id="scrim" style="display:none;position:fixed;inset:0;z-index:25"></div>
+    <div id="scrim2" style="display:none;position:fixed;inset:0;z-index:35"></div>
+    <div style="flex:1"></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--faint);white-space:nowrap;display:flex;align-items:center;gap:6px"><span id="dot" style="width:6px;height:6px;border-radius:50%;background:var(--green)"></span><span id="synced">Synced just now</span></span>
+      <button class="btn" id="refresh" title="Refresh now">
+        <svg id="spin" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"></path><path d="M13.5 2.5v3h-3"></path></svg>
+        <span>Refresh</span>
+      </button>
+      <button class="btn" id="theme" title="Toggle theme" style="width:30px;padding:0;justify-content:center;color:var(--muted)"></button>
+    </div>
+  </div>
+</header>
+<main style="max-width:1480px;margin:0 auto;padding:16px 20px 120px;display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+    <div style="flex:1.85 1 600px;min-width:0;display:flex;flex-direction:column;gap:16px">
+      <section class="panel">
+        <div class="ph b"><span style="font-weight:600">Comparison</span><span id="cmpSub" style="color:var(--muted);font-size:12px"></span><div style="flex:1"></div><a id="gh" target="_blank" style="display:none;font-size:12px;color:var(--muted)">Open on GitHub ↗</a></div>
+        <div style="padding:12px 14px;display:flex;gap:8px;align-items:stretch">
+          <button class="slot" id="slotA"><small>Base</small><span id="labA"></span></button>
+          <button class="btn" id="swap" title="Swap base and compare" style="width:30px;padding:0;justify-content:center;align-self:center;color:var(--muted)">⇄</button>
+          <button class="slot" id="slotB"><small>Compare</small><span id="labB"></span></button>
+        </div>
+      </section>
+      <div id="result" style="display:flex;flex-direction:column;gap:16px"></div>
+    </div>
+    <div id="selCol" style="flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:16px">
+      <section class="panel">
+        <div class="ph" style="flex-wrap:nowrap"><span style="font-weight:600">Select</span><span id="selCount" style="color:var(--muted);font-size:12px"></span><div style="flex:1"></div><button class="btn" id="selToggle" title="Minimize / expand" style="width:26px;height:26px;padding:0;justify-content:center;color:var(--muted)"></button></div>
+        <div id="selBody"><div style="padding:0 14px 10px;display:flex;flex-direction:column;gap:8px">
+          <div class="seg" id="tabs"></div>
+          <div style="display:flex;gap:8px;position:relative;z-index:36">
+            <input id="q" placeholder="Filter…" style="flex:1;min-width:0;height:30px;border:1px solid var(--border);background:var(--panel);border-radius:7px;padding:0 10px;outline:none;font-size:12.5px">
+            <button class="btn" id="sortBtn" title="Sort by" style="gap:6px;white-space:nowrap"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><path d="M5 3v10M2.5 10.5 5 13l2.5-2.5M11 13V3M8.5 5.5 11 3l2.5 2.5"></path></svg><span id="sortLabel"></span></button>
+            <div id="sortMenu" style="display:none;position:absolute;top:34px;right:0;width:200px;background:var(--panel);border:1px solid var(--border2);border-radius:9px;box-shadow:var(--shadow);padding:4px"></div>
+          </div>
+          <span id="hint" style="font-size:12px;color:var(--faint)"></span>
+        </div>
+        <div id="opts"></div></div>
+      </section>
+    </div>
+  </div>
+</main>
+<div id="cv" style="display:none;position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.4);align-items:center;justify-content:center;padding:20px">
+  <div class="panel" style="width:min(760px,100%);max-height:calc(100vh - 40px);display:flex;flex-direction:column;box-shadow:var(--shadow-lg)">
+    <div class="ph b" style="flex-wrap:nowrap"><span style="font-weight:600">Slack canvas</span><span id="cvState" style="color:var(--muted);font-size:12px"></span><div style="flex:1"></div>
+      <div class="seg" id="cvTabs"><button data-t="prev" class="on">Preview</button><button data-t="edit">Markdown</button></div>
+      <button class="btn ib" id="cvX" title="Close">✕</button></div>
+    <div id="cvBody" style="flex:1;min-height:260px;overflow:auto;padding:16px 22px"></div>
+    <div id="cvRefine" style="border-top:1px solid var(--border);padding:10px 14px 0">
+      <div id="cvSelChip" style="display:none;margin-bottom:8px;padding:5px 8px;border:1px solid var(--border);background:var(--hl);border-radius:8px;font-size:12px;align-items:center;gap:8px"><span style="color:var(--muted)">Editing</span><span id="cvSelText" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span><button id="cvSelX" style="border:none;background:none;cursor:pointer;color:var(--muted)">✕</button></div>
+      <div style="display:flex;gap:8px;align-items:center;border:1px solid var(--border);border-radius:9px;padding:3px 4px 3px 10px"><input id="cvIn" placeholder="Refine it: e.g. shorten the TL;DR, add a section on tests, make it less technical…" style="flex:1;min-width:0;border:none;outline:none;background:transparent;height:30px;font-size:13px"><button class="btn" id="cvSend" title="Apply" style="width:30px;padding:0;justify-content:center;background:var(--text);color:var(--bg);border:none">↑</button></div>
+      <div id="cvQuick" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+    </div>
+    <div class="ph" style="justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn" id="cvRegen" title="Write a fresh version from the chat">Regenerate</button><button class="btn" id="cvUndo" style="display:none">↶ Undo</button><div style="flex:1"></div>
+      <button class="btn" id="cvFile">Download .md</button><button class="btn" id="cvSlack">Copy as Slack message</button>
+      <button class="btn" id="cvCopy" style="background:var(--text);color:var(--bg);border-color:var(--text)">Copy for canvas</button></div>
+  </div>
+</div>
+<button id="cvPop" style="position:fixed;z-index:130;display:none;height:28px;padding:0 10px;border-radius:7px;border:none;background:var(--text);color:var(--bg);font-size:12px;font-weight:500;cursor:pointer;box-shadow:var(--shadow)">✦ Edit selection</button>
+<button id="askPop">✦ Ask about selection</button>
+<button id="chatOpen" style="position:fixed;right:20px;bottom:20px;z-index:40;height:40px;padding:0 10px 0 14px;border-radius:999px;background:var(--text);color:var(--bg);border:none;display:flex;gap:8px;align-items:center;box-shadow:var(--shadow-lg);cursor:pointer;font-weight:500"><svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 9.6 6.4 15 8 9.6 9.6 8 15 6.4 9.6 1 8 6.4 6.4z"></path></svg>Ask<span id="kbd" class="mono" style="font-size:11px;line-height:16px;padding:2px 7px;border-radius:5px;background:color-mix(in srgb,var(--bg) 18%,transparent)"></span></button>
+<section id="chat" style="display:none">
+  <div class="rz l" data-d="l"></div><div class="rz t" data-d="t"></div><div class="rz c" data-d="c"></div>
+  <div class="ph b" style="flex-wrap:nowrap;gap:6px;padding:9px 10px 9px 14px;position:relative">
+    <div style="flex:1;min-width:0"><div id="chatTitle" title="Click to rename" style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:text">Ask</div><div id="chatScope" style="color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div></div>
+    <button class="btn ib" id="chatHist" title="Chat history"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"></circle><path d="M8 4.5V8l2.3 1.5"></path></svg></button>
+    <button class="btn ib" id="chatNew" title="New chat"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 3v10M3 8h10"></path></svg></button>
+    <button class="btn ib" id="chatExp" title="Export chat"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V2.5M5 5.2 8 2.5l3 2.7M3 9v4h10V9"></path></svg></button>
+    <button class="btn ib" id="chatBig" title="Expand / shrink"></button>
+    <button class="btn ib" id="chatClose" title="Close">✕</button>
+    <div id="expMenu" style="display:none;position:absolute;top:46px;right:10px;z-index:5;width:270px;background:var(--panel);border:1px solid var(--border2);border-radius:9px;box-shadow:var(--shadow);padding:4px">
+      <button class="menu-item" data-x="clean" style="height:auto;padding:7px 9px;flex-direction:column;align-items:flex-start;gap:1px"><span>✦ Clean summary for Slack canvas</span><small style="color:var(--faint);font-size:11px">AI writes a tidy doc: TL;DR, findings, follow-ups</small></button>
+      <div style="height:1px;background:var(--border);margin:4px 0"></div><div style="padding:4px 9px;font-size:11px;color:var(--faint)">Full chat</div>
+      <button class="menu-item" data-x="canvas" style="height:auto;padding:7px 9px;flex-direction:column;align-items:flex-start;gap:1px"><span>Copy as Markdown</span><small style="color:var(--faint);font-size:11px">Whole conversation, for a canvas</small></button>
+      <button class="menu-item" data-x="slack" style="height:auto;padding:7px 9px;flex-direction:column;align-items:flex-start;gap:1px"><span>Copy as Slack message</span><small style="color:var(--faint);font-size:11px">Whole conversation, Slack formatting</small></button>
+      <button class="menu-item" data-x="file" style="height:auto;padding:7px 9px;flex-direction:column;align-items:flex-start;gap:1px"><span>Download .md</span><small style="color:var(--faint);font-size:11px">Whole conversation</small></button>
+    </div>
+  </div>
+  <div class="msgs" id="msgs"></div>
+  <div id="chatFoot">
+  <div id="ctxBar" style="display:none;margin:0 14px 8px;padding:6px 8px;border:1px solid var(--border);background:var(--hl);border-radius:8px;font-size:12px;align-items:center;gap:8px"><span id="ctxText" class="mono" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span><button id="ctxX" style="border:none;background:none;cursor:pointer;color:var(--muted)">✕</button></div>
+  <div style="padding:0 14px 14px"><div style="display:flex;gap:8px;align-items:center;border:1px solid var(--border);border-radius:9px;padding:3px 4px 3px 10px"><input id="chatIn" placeholder="Ask about this comparison…" style="flex:1;min-width:0;border:none;outline:none;background:transparent;height:30px;font-size:13px"><button class="btn" id="chatSend" style="width:30px;padding:0;justify-content:center;background:var(--text);color:var(--bg);border:none">↑</button></div></div>
+  </div>
+</section>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const rel=ms=>{const m=Math.max(1,Math.round((Date.now()-ms)/6e4));if(m<60)return m+'m';const h=Math.round(m/60);if(h<24)return h+'h';return Math.round(h/24)+'d'};
+const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
+const STATUS={open:'open',review:'in review',merged:'merged',closed:'closed'};
+const GC={open:'var(--purple)',review:'var(--amber)',merged:'var(--green)',closed:'var(--faint)'};
+const lsGet=k=>{try{return localStorage.getItem(k)}catch{return null}},lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
+const P=new URLSearchParams(location.search);
+const S={data:null,repo:P.get('repo'),a:null,b:null,side:'a',tab:P.get('tab')||'branch',q:'',loading:false,error:null,res:null,open:{},menu:false,sortMenu:false,sorts:(()=>{try{return JSON.parse(lsGet('sorts'))||{}}catch{return {}}})(),selOpen:lsGet('selOpen')!=='0',comOpen:lsGet('comOpen')!=='0',comAll:false,view:lsGet('diffView')==='split'?'split':'unified',chat:{open:false,msgs:[],busy:false,sel:null,file:null,id:null,title:'',created:0,view:'chat',renaming:null},chats:[],hl:null,refreshing:false,syncedAt:Date.now()};
+if(P.get('base')&&P.get('head'))S.a={ref:P.get('base'),label:P.get('bl')||P.get('base')},S.b={ref:P.get('head'),label:P.get('hl')||P.get('head')};
+
+// theme (shared with the dashboard via localStorage)
+const SUN='<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"></circle><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"></path></svg>';
+const MOON='<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z"></path></svg>';
+const theme=()=>{try{return localStorage.getItem('theme')}catch{return null}};
+const setTheme=t=>{document.documentElement.dataset.theme=t;$('theme').innerHTML=t==='dark'?SUN:MOON};
+setTheme(theme()||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
+$('theme').onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('theme',n)}catch{}setTheme(n)};
+
+function syncUrl(){
+  const p=new URLSearchParams({repo:S.repo,tab:S.tab});
+  if(S.a&&S.b){p.set('base',S.a.ref);p.set('head',S.b.ref);p.set('bl',S.a.label);p.set('hl',S.b.label)}
+  history.replaceState(null,'','/compare?'+p);
+}
+async function run(fresh){
+  if(!S.a||!S.b)return render();
+  const key=S.repo+S.a.ref+S.b.ref+Date.now();S.key=key;S.loading=true;S.error=null;if(!fresh)S.res=null;S.open={};syncUrl();render();
+  try{
+    const q=new URLSearchParams({repo:S.repo,base:S.a.ref,head:S.b.ref});if(fresh)q.set('fresh','1');
+    const r=await fetch('/api/compare?'+q);
+    const j=await r.json();
+    if(S.key!==key)return;
+    if(!r.ok)throw new Error((j.error||'Compare failed').replace(/^gh: /,'').replace(/\s*\(HTTP \d+\)\s*$/,''));
+    S.res=j;if(j.files.length===1)S.open[0]=true;
+  }catch(e){if(S.key!==key)return;S.error=e.message;S.res=null}
+  S.loading=false;render();
+}
+const pickRef=(ref,label)=>{const o=S.side==='a'?'b':'a';S[S.side]={ref,label};if(!S[o])S.side=o;S.res=null;run()};
+const pickPR=p=>{S.a={ref:p.baseSha||p.base,label:`#${p.n} base (${p.base||'base'})`};S.b={ref:p.headSha||p.branch,label:`#${p.n} ${p.branch}`};run()};
+const pickPush=e=>{const cs=e.commits,f=cs[cs.length-1].sha,l=cs[0].sha;S.a={ref:f+'^',label:'before '+f};S.b={ref:l,label:`${l} (${e.branch})`};run()};
+const person=login=>(S.data.people[login]||{}).name||login;
+
+const SORTS={
+  branch:[['recent','Recently updated'],['oldest','Least recently updated'],['az','Name A–Z'],['za','Name Z–A']],
+  pr:[['new','Newest first'],['old','Oldest first'],['size','Most changes'],['status','Status']],
+  push:[['new','Newest first'],['old','Oldest first'],['commits','Most commits']]};
+const curSort=()=>{const v=S.sorts[S.tab];return SORTS[S.tab].some(x=>x[0]===v)?v:SORTS[S.tab][0][0]};
+function options(){
+  const d=S.data,q=S.q.toLowerCase(),hit=t=>!q||t.toLowerCase().includes(q);
+  if(S.tab==='branch')return d.branches.filter(b=>b.repo===S.repo&&hit(b.name)).sort((a,b)=>{const k=curSort();return k==='az'?a.name.localeCompare(b.name):k==='za'?b.name.localeCompare(a.name):(b.def-a.def)||(k==='oldest'?a.date-b.date:b.date-a.date)}).map(b=>({t:b.name,s:(b.def?'default · ':'')+(b.date?'updated '+rel(b.date)+' ago':''),mono:1,on:S[S.side]&&S[S.side].ref===b.name,go:()=>pickRef(b.name,b.name)}));
+  if(S.tab==='pr')return d.prs.filter(p=>p.repo===S.repo&&hit(`#${p.n} ${p.title}`)).sort((a,b)=>{const k=curSort(),O={open:0,review:1,merged:2,closed:3};return k==='old'?a.n-b.n:k==='size'?(b.adds+b.dels)-(a.adds+a.dels):k==='status'?(O[a.status]-O[b.status])||b.n-a.n:b.n-a.n}).map(p=>({t:p.title,n:'#'+p.n,dot:GC[p.status],s:`${STATUS[p.status]} · ${person(p.by)} · +${p.adds} −${p.dels}`,go:()=>pickPR(p)}));
+  return d.events.filter(e=>e.repo===S.repo&&e.type==='push'&&e.commits&&e.commits.length&&hit(e.commits[0].msg+' '+e.branch)).sort((a,b)=>{const k=curSort();return k==='old'?a.ts-b.ts:k==='commits'?b.commits.length-a.commits.length||b.ts-a.ts:b.ts-a.ts}).slice(0,80).map(e=>({t:e.commits[0].msg,s:`${e.branch} · ${person(e.author)} · ${plural(e.commits.length,'commit')} · ${rel(e.ts)} ago`,go:()=>pickPush(e)}));
+}
+const CHEV='<svg class="chev" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="transform:@@R@@"><path d="M6 4l4 4-4 4"></path></svg>';
+const sk=(w,h,extra='')=>`<div class="sk" style="width:${w};height:${h}px;${extra}"></div>`;
+
+function unifiedRows(lines){
+  let o=0,n=0;
+  const row=(c,a,b,t,nl)=>`<div class="u ${c}"${nl!=null?` data-nl="${nl}"`:''}><span class="n">${a??''}</span><span class="n">${b??''}</span><span class="t">${esc(t)||' '}</span></div>`;
+  return lines.map(t=>{
+    if(t[0]==='@'){const m=/^@@ -(\d+)(?:,\d+)? \+(\d+)/.exec(t);if(m){o=+m[1];n=+m[2]}return `<div class="h">${esc(t)}</div>`}
+    if(t[0]==='-')return row('d',o++,'',t);
+    if(t[0]==='\\')return `<div>${esc(t)}</div>`;
+    if(t[0]==='+')return row('a','',n,t,n++);
+    return row('',o++,n,t,n++);
+  }).join('');
+}
+// Pairs removed/added lines of a unified patch into left (old) / right (new) cells.
+function splitRows(lines){
+  const cell=(n,t,c,nl)=>`<div class="${c}"${nl!=null?` data-nl="${nl}"`:''}><span class="n">${n??''}</span><span class="t">${esc(t)}</span></div>`;
+  let o=0,nw=0,del=[],add=[],out='';
+  const flush=()=>{const m=Math.max(del.length,add.length);for(let i=0;i<m;i++){const d=del[i],a=add[i];out+=`<div class="sr">${d?cell(d[0],d[1],'d'):cell('','','e')}${a?cell(a[0],a[1],'a',a[0]):cell('','','e')}</div>`}del=[];add=[]};
+  for(const t of lines){
+    if(t[0]==='@'){flush();const m=/^@@ -(\d+)(?:,\d+)? \+(\d+)/.exec(t);if(m){o=+m[1];nw=+m[2]}out+=`<div class="sr h"><div class="h"><span class="t">${esc(t)}</span></div></div>`}
+    else if(t[0]==='-')del.push([o++,t.slice(1)]);
+    else if(t[0]==='+')add.push([nw++,t.slice(1)]);
+    else if(t[0]==='\\')continue;
+    else{flush();const x=t.slice(1);out+=`<div class="sr">${cell(o++,x,'')}${cell(nw,x,'',nw++)}</div>`}
+  }
+  flush();return out;
+}
+const COM_LIMIT=8;
+function render(){
+  renderChat();
+  const d=S.data;
+  $('repoLabel').textContent=S.repo||'Repository';
+  $('repoMenu').style.display=S.menu?'block':'none';$('scrim').style.display=S.menu?'block':'none';
+  $('repoMenu').innerHTML=d.repos.map(r=>`<button class="menu-item" data-r="${esc(r)}"><span class="box ${r===S.repo?'on':''}">${r===S.repo?'<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"></path></svg>':''}</span><span class="mono" style="flex:1;font-size:12px">${esc(r)}</span></button>`).join('');
+  $('repoMenu').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.repo=b.dataset.r;S.a=S.b=null;S.res=null;S.error=null;S.side='a';S.menu=false;syncUrl();render()});
+  $('sortLabel').textContent=SORTS[S.tab].find(x=>x[0]===curSort())[1];
+  $('sortMenu').style.display=S.sortMenu?'block':'none';$('scrim2').style.display=S.sortMenu?'block':'none';
+  $('sortMenu').innerHTML=SORTS[S.tab].map(([k,l])=>`<button class="menu-item" data-k="${k}"><span style="flex:1">${l}</span>${k===curSort()?'<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"></path></svg>':''}</button>`).join('');
+  $('sortMenu').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.sorts[S.tab]=b.dataset.k;lsSet('sorts',JSON.stringify(S.sorts));S.sortMenu=false;render()});
+  $('selBody').style.display=S.selOpen?'block':'none';
+  $('selCol').style.cssText=S.selOpen?'flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:16px':'flex:0 0 190px;min-width:0;display:flex;flex-direction:column;gap:16px';
+  $('selToggle').innerHTML=`<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="transform:${S.selOpen?'rotate(180deg)':'none'}"><path d="M4 6l4 4 4-4"></path></svg>`;
+  $('labA').textContent=S.a?S.a.label:'Choose…';$('labB').textContent=S.b?S.b.label:'Choose…';
+  $('slotA').classList.toggle('active',S.side==='a');$('slotB').classList.toggle('active',S.side==='b');
+  const res=S.res;
+  $('cmpSub').textContent=res?`${plural(res.files.length,'file')} · ${plural(res.total,'commit')}`:'';
+  const gh=$('gh');gh.style.display=res?'block':'none';if(res)gh.href=res.url;
+  $('tabs').innerHTML=[['branch','Branches'],['pr','Pull requests'],['push','Pushes']].map(([k,l])=>`<button class="${S.tab===k?'on':''}" data-k="${k}" style="flex:1;justify-content:center">${l}</button>`).join('');
+  $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.k;S.q='';$('q').value='';syncUrl();render()});
+  $('hint').textContent=S.tab==='branch'?'Selecting for: '+(S.side==='a'?'Base':'Compare'):S.tab==='pr'?'Fills both sides with the pull request’s changes.':'Fills both sides with the commits in that push.';
+  const o=options();$('selCount').textContent=o.length;
+  const box=$('opts');
+  box.innerHTML=o.length?'':'<div style="border-top:1px solid var(--border);padding:28px 14px;text-align:center;color:var(--muted)">Nothing matches</div>';
+  o.forEach(x=>{const b=document.createElement('button');b.className='pick'+(x.on?' on':'');
+    b.innerHTML=`<div style="display:flex;gap:6px;align-items:baseline;justify-content:space-between"><b class="${x.mono?'mono':''}" ${x.mono?'style="font-size:12px"':''}>${esc(x.t)}</b>${x.n?`<span class="mono" style="flex:none;font-size:11.5px;color:var(--faint)">${x.n}</span>`:''}</div><small>${x.dot?`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${x.dot};margin-right:6px"></span>`:''}${esc(x.s)}</small>`;b.onclick=x.go;box.append(b)});
+
+  const r=$('result');
+  if(S.loading&&!res){r.innerHTML=`<section class="panel"><div class="ph">${sk('90px',12)}</div>${[60,80,45,70].map(w=>`<div class="row" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">${sk(w+'%',11)}<div style="width:40%;height:9px;border-radius:4px;background:var(--sunken)"></div></div>`).join('')}</section>`;return}
+  if(S.error){r.innerHTML=`<section class="panel"><div class="empty"><div style="width:36px;height:36px;border-radius:9px;background:var(--red-bg);border:1px solid var(--border);color:var(--red);display:grid;place-items:center"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6.25"></circle><path d="M8 4.75V8.5M8 10.9v.1"></path></svg></div><span style="font-weight:600;font-size:14px">Couldn’t compare these</span><span style="color:var(--muted);max-width:420px;text-wrap:pretty;white-space:pre-wrap">${esc(S.error)}</span></div></section>`;return}
+  if(!res){r.innerHTML=`<section class="panel"><div class="empty"><div style="width:36px;height:36px;border-radius:9px;background:var(--sunken);border:1px solid var(--border);color:var(--faint);display:grid;place-items:center"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="3.5" r="1.75"></circle><circle cx="4" cy="12.5" r="1.75"></circle><circle cx="12" cy="12.5" r="1.75"></circle><path d="M4 5.25v5.5M12 10.75V6.5a2 2 0 0 0-2-2H7M8.5 3 7 4.5 8.5 6"></path></svg></div><span style="font-weight:600;font-size:14px">Pick something to compare</span><span style="color:var(--muted);max-width:380px;text-wrap:pretty">Choose a base and a compare ref, or pick a pull request or push to fill both sides.</span></div></section>`;return}
+  const adds=res.files.reduce((a,f)=>a+f.a,0),dels=res.files.reduce((a,f)=>a+f.d,0);
+  const st=res.status==='identical'?'No differences':res.ahead&&res.behind?`${res.ahead} ahead, ${res.behind} behind`:res.ahead?`${res.ahead} ahead`:res.behind?`${res.behind} behind`:'';
+  let h='';
+  if(res.commits.length){
+    h+=`<section class="panel"><div class="ph"><span style="font-weight:600">Commits</span><span style="color:var(--muted);font-size:12px">${res.total}</span><div style="flex:1"></div><span style="color:var(--muted);font-size:12px">${esc(st)}</span><button class="btn" id="comToggle" title="Minimize / expand" style="width:26px;height:26px;padding:0;justify-content:center;color:var(--muted)"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="transform:${S.comOpen?'rotate(180deg)':'none'}"><path d="M4 6l4 4 4-4"></path></svg></button></div>`+
+      (S.comOpen?(S.comAll?res.commits:res.commits.slice(0,COM_LIMIT)):[]).map(c=>`<div class="row" style="display:flex;gap:12px;align-items:baseline;padding:8px 14px;font-size:12.5px"><a target="_blank" href="https://github.com/${esc(S.repo)}/commit/${esc(c.sha)}" class="mono" style="font-size:11.5px;color:var(--muted)">${esc(c.sha)}</a><span style="flex:1;min-width:0">${esc(c.msg)}</span><span style="color:var(--muted);font-size:12px">${esc(c.author)}</span><span class="mono" style="font-size:11.5px;color:var(--faint)">${rel(c.date)}</span></div>`).join('')+(S.comOpen&&res.commits.length>COM_LIMIT?`<button id="comMore" class="row hov" style="width:100%;display:flex;padding:10px 14px;border-left:none;border-right:none;border-bottom:none;background:transparent;cursor:pointer;justify-content:center;color:var(--muted);font-size:12px">${S.comAll?'Show fewer':`Show ${res.commits.length-COM_LIMIT} more commits`}</button>`:'')+'</section>';
+  }
+  h+=`<section class="panel"><div class="ph"><span style="font-weight:600">Files changed</span><span style="color:var(--muted);font-size:12px">${res.files.length}</span><span class="mono add" style="font-size:12px">+${adds}</span><span class="mono del" style="font-size:12px">−${dels}</span><div style="flex:1"></div><div class="seg" id="viewSeg"><button class="${S.view==='unified'?'on':''}" data-v="unified">Unified</button><button class="${S.view==='split'?'on':''}" data-v="split">Side by side</button></div></div>`;
+  if(!res.files.length)h+=`<div class="row empty"><span style="font-weight:600;font-size:14px">No differences</span><span style="color:var(--muted)">These two refs point at the same code.</span></div>`;
+  const mx=Math.max(1,...res.files.map(f=>f.a+f.d));
+  res.files.forEach((f,i)=>{
+    const open=!!S.open[i],n=Math.max(1,Math.round((f.a+f.d)/mx*5)),g=Math.round(n*f.a/Math.max(1,f.a+f.d));
+    const boxes=Array.from({length:5},(_,k)=>`<span style="width:7px;height:7px;border-radius:1.5px;background:${k<g?'var(--green)':k<n?'var(--red)':'var(--border2)'}"></span>`).join('');
+    h+=`<div class="row"><button class="fbtn" data-i="${i}">${CHEV.replace('@@R@@',open?'rotate(90deg)':'none')}<span class="mono" style="flex:1;min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.path)}</span><span class="fask" data-ask="${i}">✦ Ask</span><span style="font-size:12px;color:var(--faint)">${esc(f.status)}</span><span class="mono add" style="font-size:11.5px">+${f.a}</span><span class="mono del" style="font-size:11.5px">−${f.d}</span><span style="display:flex;gap:1px">${boxes}</span></button>`;
+    if(open){
+      const lines=(f.patch||'').split('\n');
+      if(f.patch&&S.view==='split')h+=`<div class="diff split" data-fi="${i}">`+splitRows(lines.slice(0,800))+(lines.length>800?'<div style="color:var(--faint);padding:8px 10px">Diff truncated. Open on GitHub for the rest.</div>':'')+'</div>';
+      else h+=`<div class="diff" data-fi="${i}">`+(f.patch?unifiedRows(lines.slice(0,800)):'<div style="color:var(--faint);padding:8px 10px;white-space:normal">No textual diff available (binary or too large).</div>')+(lines.length>800?'<div style="color:var(--faint);padding:8px 10px">Diff truncated. Open on GitHub for the rest.</div>':'')+'</div>';
+    }
+    h+='</div>';
+  });
+  h+='</section>';
+  r.innerHTML=h;
+  const ct=$('comToggle');if(ct)ct.onclick=()=>{S.comOpen=!S.comOpen;lsSet('comOpen',S.comOpen?'1':'0');render()};
+  const cm=$('comMore');if(cm)cm.onclick=()=>{S.comAll=!S.comAll;render()};
+  r.querySelectorAll('#viewSeg button').forEach(b=>b.onclick=()=>{S.view=b.dataset.v;lsSet('diffView',S.view);render()});
+  r.querySelectorAll('.fbtn').forEach(b=>b.onclick=()=>{S.open[b.dataset.i]=!S.open[b.dataset.i];render()});
+  r.querySelectorAll('[data-ask]').forEach(b=>b.onclick=e=>{e.stopPropagation();const f=res.files[+b.dataset.ask];S.chat.file=f.path;S.chat.sel=null;openChat()});
+  applyHl();
+}
+// ---- assistant
+function applyHl(){
+  const h=S.hl;if(!h||!S.res)return;
+  const box=document.querySelector(`.diff[data-fi="${h.i}"]`);if(!box)return;
+  let first=null;
+  box.querySelectorAll('[data-nl]').forEach(el=>{const n=+el.dataset.nl;if(n>=h.a&&n<=h.b){const t=el.closest('.sr')||el;t.classList.add('hl');if(!first)first=t}});
+  if(h.scroll&&first){h.scroll=false;first.scrollIntoView({block:'center',behavior:'smooth'})}
+}
+function jumpTo(path,a,b){
+  const i=S.res.files.findIndex(f=>f.path===path);if(i<0)return;
+  S.open[i]=true;S.hl={i,a,b,scroll:true};render();
+}
+const CITE=/([\w.\/-]+\.\w+):(\d+)(?:[-–](\d+))?/g;
+function chips(escaped){
+  const files=S.res?S.res.files.map(f=>f.path):[],shas=new Set(S.res?S.res.commits.map(c=>c.sha):[]);
+  return escaped.replace(CITE,(m,p,a,b)=>{
+    const full=files.find(x=>x===p||x.endsWith('/'+p));
+    return full?`<button class="cite" data-p="${esc(full)}" data-a="${a}" data-b="${b||a}">${m}</button>`:m;
+  }).replace(/\b[0-9a-f]{7}\b/g,m=>shas.has(m)?`<a class="sha" target="_blank" href="https://github.com/${esc(S.repo)}/commit/${m}">${m}</a>`:m);
+}
+// Small markdown subset: **bold**, `code`, numbered / bulleted lists, paragraphs. Safe on partial (streaming) text.
+function inline(t){
+  // Lift code spans out first so **bold** can wrap them (and `**` inside code stays literal).
+  const spans=[];
+  t=t.replace(/`[^`\n]+`/g,m=>{spans.push(m.slice(1,-1));return '\u0000'+(spans.length-1)+'\u0000'});
+  return chips(esc(t)).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/(^|[^*\w])\*(?![\s*])([^*\n]+?)\*(?![*\w])/g,'$1<em>$2</em>').replace(/\u0000(\d+)\u0000/g,(m,k)=>{
+    const c=chips(esc(spans[+k]));
+    return /^(<button[^>]*>[^<]*<\/button>|<a [^>]*>[^<]*<\/a>)$/.test(c)?c:`<code>${c}</code>`;
+  });
+}
+function md(text){
+  const out=[];let list=null;
+  const flush=()=>{if(list){out.push(`<${list.t}>${list.items.map(x=>`<li><span class="b">${list.t==='ol'?x.n:''}</span><div>${inline(x.s)}</div></li>`).join('')}</${list.t}>`);list=null}};
+  let para=[];const fp=()=>{if(para.length){out.push(`<p>${inline(para.join('\n'))}</p>`);para=[]}};
+  for(const line of text.replace(/\r/g,'').split('\n')){
+    let m;
+    if(!line.trim()){fp();flush();continue}
+    if(m=/^\s*(\d+)[.)]\s+(.*)/.exec(line)){fp();if(!list||list.t!=='ol'){flush();list={t:'ol',items:[]}}list.items.push({n:m[1],s:m[2]});continue}
+    if(m=/^\s*[-*•]\s+(.*)/.exec(line)){fp();if(!list||list.t!=='ul'){flush();list={t:'ul',items:[]}}list.items.push({s:m[1]});continue}
+    if(m=/^#{1,4}\s+(.*)/.exec(line)){fp();flush();out.push(`<h4>${inline(m[1])}</h4>`);continue}
+    if(list&&/^\s+\S/.test(line)){list.items[list.items.length-1].s+=' '+line.trim();continue}
+    flush();para.push(line);
+  }
+  fp();flush();return out.join('');
+}
+const STAGES={chat:[[0,'Reading the comparison'],[4,'Checking commits and patches'],[10,'Working out an answer'],[25,'Still working, large diffs take a little longer']],
+  canvas:[[0,'Reading the chat'],[4,'Pulling the key findings together'],[10,'Drafting the canvas'],[25,'Still writing, almost there']]};
+const thinking=(kind,t0)=>`<div class="think" data-k="${kind}" data-t0="${t0}"><svg class="spark" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 9.6 6.4 15 8 9.6 9.6 8 15 6.4 9.6 1 8 6.4 6.4z"></path></svg><span class="tt"></span><span class="dots"><i></i><i></i><i></i></span><span class="el"></span></div>`;
+function tickThinking(){
+  document.querySelectorAll('.think').forEach(el=>{
+    const sec=Math.floor((Date.now()-+el.dataset.t0)/1000),st=STAGES[el.dataset.k];
+    let label=st[0][1];for(const [t,l] of st)if(sec>=t)label=l;
+    const tt=el.querySelector('.tt'),e=el.querySelector('.el');
+    if(tt.textContent!==label)tt.textContent=label;
+    e.textContent=sec>=2?sec+'s':'';
+  });
+}
+setInterval(tickThinking,500);
+const ago=ms=>{const m=Math.max(1,Math.round((Date.now()-ms)/6e4));return m<60?m+'m ago':m<1440?Math.round(m/60)+'h ago':Math.round(m/1440)+'d ago'};
+const scopeOf=(repo,a,b)=>a&&b?`${repo?repo.split('/').pop()+' · ':''}${a.label} → ${b.label}`:'no comparison';
+function titleEditor(id,cur,cls){
+  return `<input class="rn ${cls||''}" data-rn="${esc(id)}" value="${esc(cur)}" maxlength="120">`;
+}
+function bindRename(root){
+  root.querySelectorAll('input[data-rn]').forEach(inp=>{
+    setTimeout(()=>{inp.focus();inp.select()},0);
+    let done=false;
+    const commit=ok=>{if(done)return;done=true;S.chat.renaming=null;if(ok)renameChat(inp.dataset.rn,inp.value.trim());else renderChat()};
+    inp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')commit(true);else if(e.key==='Escape')commit(false)};
+    inp.onblur=()=>commit(true);inp.onclick=e=>e.stopPropagation();
+  });
+}
+function renderChat(){
+  const c=S.chat;
+  $('chat').style.display=c.open?'flex':'none';$('chatOpen').style.display=c.open?'none':'flex';
+  const hist=c.view==='history';
+  $('chatScope').textContent=hist?`${S.chats.length} saved chat${S.chats.length===1?'':'s'}`:scopeOf(S.repo,S.a,S.b);
+  const tEl=$('chatTitle');
+  if(hist)tEl.textContent='Chat history';
+  else if(c.renaming&&c.renaming===c.id){tEl.innerHTML=titleEditor(c.id,c.title);bindRename(tEl)}
+  else tEl.textContent=c.title||'New chat';
+  $('chatHist').style.color=hist?'var(--text)':'';
+  $('expMenu').style.display=c.exp?'block':'none';
+  $('chatExp').style.display=hist?'none':'flex';
+  const cx=c.sel?`Selected in ${c.sel.path}: ${c.sel.text.replace(/\s+/g,' ').slice(0,80)}`:c.file?`File: ${c.file}`:'';
+  $('ctxBar').style.display=cx&&!hist?'flex':'none';$('ctxText').textContent=cx;
+  $('chatFoot').style.display=hist?'none':'block';
+  const m=$('msgs');
+  if(hist){
+    m.innerHTML=S.chats.length?S.chats.map(x=>`<div class="hi ${x.id===c.id?'cur':''}" data-id="${esc(x.id)}"><div class="hm">${c.renaming===x.id?titleEditor(x.id,x.title):`<b>${esc(x.title)}</b>`}<small>${esc(scopeOf(x.repo,x.a,x.b))} · ${ago(x.updated)}</small></div><button class="btn ib" data-ren="${esc(x.id)}" title="Rename">✎</button><button class="btn ib" data-del="${esc(x.id)}" title="Delete">✕</button></div>`).join(''):'<span style="color:var(--muted)">No saved chats yet. Ask something and it is saved automatically.</span>';
+    m.querySelectorAll('.hi').forEach(el=>el.onclick=()=>openSaved(el.dataset.id));
+    m.querySelectorAll('[data-ren]').forEach(b=>b.onclick=e=>{e.stopPropagation();c.renaming=b.dataset.ren;renderChat()});
+    m.querySelectorAll('[data-del]').forEach(b=>b.onclick=e=>{e.stopPropagation();deleteChat(b.dataset.del)});
+    bindRename(m);m.scrollTop=0;return;
+  }
+  if(!c.msgs.length&&!c.busy){
+    m.innerHTML=`<span style="color:var(--muted)">${S.res?'Ask about this comparison. Highlight code in the diff to ask about just that part.':'Pick two refs, a pull request or a push first, then ask about the changes.'}</span>`+(S.res?(c.sel?['Which commit introduced this?','Explain this code','Any bugs here?']:['Summarise these changes','Which commits touched what?','Any risks or bugs in this diff?']).map(q=>`<button class="sug" data-q="${esc(q)}">${esc(q)}</button>`).join(''):'');
+    m.querySelectorAll('.sug').forEach(b=>b.onclick=()=>send(b.dataset.q));
+  }else{
+    m.innerHTML=c.msgs.map(x=>x.role==='user'?`<div class="m-u"><div class="t">${esc(x.text)}</div>${x.ctx?`<div class="c">${esc(x.ctx).replace(/\//g,'/<wbr>')}</div>`:''}</div>`:`<div class="m-a" ${x.err?'style="color:var(--red)"':''}>${x.err?esc(x.text):md(x.text)}${x.live?'<span class="caret"></span>':''}</div>`).join('')+(c.busy?thinking('chat',c.t0||Date.now()):'');tickThinking();
+    m.querySelectorAll('.m-a .cite').forEach(b=>b.onclick=()=>jumpTo(b.dataset.p,+b.dataset.a,+b.dataset.b));
+    if(c.msgs.length!==c.shown||m.scrollHeight-m.scrollTop-m.clientHeight<80||c.busy)m.scrollTop=m.scrollHeight;c.shown=c.msgs.length;
+  }
+}
+// ---- saved chats (server: /api/chats)
+async function loadChats(){try{const r=await fetch('/api/chats');if(r.ok)S.chats=await r.json()}catch{}renderChat()}
+function chatObj(){const c=S.chat;return{id:c.id,title:c.title,repo:S.repo,a:S.a,b:S.b,created:c.created,updated:Date.now(),msgs:c.msgs.filter(m=>!m.live).map(({role,text,ctx,err})=>({role,text,ctx,err}))}}
+function upsert(o){const i=S.chats.findIndex(x=>x.id===o.id);if(i>=0)S.chats.splice(i,1);S.chats.unshift(o)}
+async function persist(o){
+  o=o||chatObj();upsert(o);
+  try{await fetch('/api/chats/'+encodeURIComponent(o.id),{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(o)})}catch{}
+}
+function renameChat(id,title){
+  const o=S.chats.find(x=>x.id===id);
+  if(o&&title){o.title=title;if(S.chat.id===id)S.chat.title=title;persist(o)}
+  renderChat();
+}
+async function deleteChat(id){
+  S.chats=S.chats.filter(x=>x.id!==id);
+  try{await fetch('/api/chats/'+encodeURIComponent(id),{method:'DELETE'})}catch{}
+  if(S.chat.id===id)Object.assign(S.chat,{id:null,title:'',msgs:[],created:0});
+  renderChat();
+}
+function openSaved(id){
+  const o=S.chats.find(x=>x.id===id);if(!o)return;
+  Object.assign(S.chat,{id:o.id,title:o.title,created:o.created,msgs:o.msgs.map(m=>({...m})),view:'chat',sel:null,file:null,busy:false,renaming:null,exp:false,shown:-1});
+  if(o.repo&&o.a&&o.b&&S.data.repos.includes(o.repo)){S.repo=o.repo;S.a=o.a;S.b=o.b;S.res=null;S.error=null;run()}else renderChat();
+}
+function newChat(){Object.assign(S.chat,{id:null,title:'',msgs:[],created:0,view:'chat',sel:null,file:null,busy:false,renaming:null,exp:false});renderChat();setTimeout(()=>$('chatIn').focus(),30)}
+
+// ---- export (Slack canvas markdown / Slack mrkdwn message / .md file)
+const gh=p=>'https://github.com/'+p;
+function fmt(text,mode){
+  const slack=mode==='slack',files=S.res?S.res.files.map(f=>f.path):[],shas=new Set(S.res?S.res.commits.map(c=>c.sha):[]);
+  const ref=S.b?S.b.ref:'HEAD',links=[];
+  const link=(label,url)=>{links.push(slack?`<${url}|${label.replace(/[<>|]/g,'')}>`:`[${label}](${url})`);return '\u0001'+(links.length-1)+'\u0001'};
+  const spans=[];
+  return text.replace(/\r/g,'').split('\n').map(line=>{
+    let pre='',m;
+    if(m=/^(#{1,4})\s+(.*)/.exec(line)){line=slack?'**'+m[2]+'**':m[1]+' '+m[2]}
+    else if(m=/^(\s*)[-*•]\s+(.*)/.exec(line)){pre=slack?'• ':'- ';line=m[2]}
+    else if(m=/^\s*(\d+)[.)]\s+(.*)/.exec(line)){pre=m[1]+'. ';line=m[2]}
+    line=line.replace(/`[^`\n]+`/g,x=>{spans.push(x.slice(1,-1));return '\u0002'+(spans.length-1)+'\u0002'});
+    if(!slack)line=line.replace(/[\[\]]/g,'\\$&'); // literal brackets must not be read as link syntax
+    if(slack)line=line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const cite=(p,a,b)=>{const full=files.length?files.find(x=>x===p||x.endsWith('/'+p)):(p.includes('/')?p:null);
+      return full?link(`${p}:${a}${b?'-'+b:''}`,gh(`${S.repo}/blob/${ref}/${full.split('/').map(encodeURIComponent).join('/')}#L${a}${b?'-L'+b:''}`)):null};
+    line=line.replace(CITE,(x,p,a,b)=>cite(p,a,b)||x).replace(/\b[0-9a-f]{7}\b/g,x=>shas.has(x)?link(x,gh(`${S.repo}/commit/${x}`)):x);
+    if(slack)line=line.replace(/(^|[^*\w])\*(?![\s*])([^*\n]+?)\*(?![*\w])/g,'$1_$2_');
+    line=line.replace(/\*\*(.+?)\*\*/g,slack?'*$1*':'**$1**');
+    line=line.replace(/\u0002(\d+)\u0002/g,(x,k)=>{
+      const raw=spans[+k],cm=/^([\w.\/-]+\.\w+):(\d+)(?:[-–](\d+))?$/.exec(raw);
+      if(cm){const l=cite(cm[1],cm[2],cm[3]);if(l)return l}
+      if(shas.has(raw))return link(raw,gh(`${S.repo}/commit/${raw}`));
+      return '`'+(slack?raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):raw)+'`';
+    });
+    return pre+line.replace(/\u0001(\d+)\u0001/g,(x,k)=>links[+k]);
+  }).join('\n');
+}
+function exportDoc(mode){
+  const c=S.chat,slack=mode==='slack',B=t=>slack?`*${t}*`:`**${t}**`;
+  const title=c.title||'Compare chat',cmp=S.a&&S.b?`${S.a.label} → ${S.b.label}`:'';
+  const head=[slack?`*${title}*`:`# ${title}`,''];
+  head.push(`${B('Repo')}: ${slack?`<${gh(S.repo)}|${S.repo}>`:`[${S.repo}](${gh(S.repo)})`}`);
+  if(cmp)head.push(`${B('Comparison')}: ${cmp}${S.res&&S.res.url?(slack?` (<${S.res.url}|view on GitHub>)`:` ([view on GitHub](${S.res.url}))`):''}`);
+  if(S.res)head.push(`${B('Changes')}: ${S.res.files.length} files, ${S.res.total} commits`);
+  head.push(`${B('Exported')}: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})}`,'');
+  const out=[...head];let q=0;
+  for(const m of c.msgs){
+    if(m.err||m.live)continue;
+    if(m.role==='user'){out.push(slack?`*Q${++q}. ${m.text.replace(/\n/g,' ')}*`:`## Q${++q}. ${m.text.replace(/\n/g,' ')}`);if(m.ctx)out.push(`_${m.ctx}_`);out.push('')}
+    else out.push(fmt(m.text,mode),'');
+  }
+  return out.join('\n').replace(/\n{3,}/g,'\n\n').trim()+'\n';
+}
+// AI-cleaned canvas: the model condenses the whole chat into a tidy document, shown in an editable preview.
+const CV={text:'',tab:'prev',busy:false,gen:0};
+function cvDocHtml(t){
+  // headings (# / ##) -> real headings; everything else through the chat renderer
+  return t.split(/\n(?=#{1,2} )/).map(sec=>{
+    const m=/^(#{1,2}) (.*)\n?([\s\S]*)$/.exec(sec);
+    return m?`<h${m[1].length}>${inline(m[2])}</h${m[1].length}><div class="m-a">${md(m[3])}</div>`:`<div class="m-a">${md(sec)}</div>`;
+  }).join('');
+}
+function cvRender(){
+  const body=$('cvBody');
+  $('cvTabs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.t===CV.tab));
+  $('cvState').textContent=CV.busy?'Writing…':'';
+  $('cvUndo').style.display=CV.prev!=null&&!CV.busy?'inline-flex':'none';
+  $('cvSend').disabled=CV.busy||!CV.text;$('cvIn').disabled=CV.busy;
+  $('cvSelChip').style.display=CV.sel?'flex':'none';if(CV.sel)$('cvSelText').textContent='“'+CV.sel.replace(/\s+/g,' ').slice(0,90)+'”';
+  $('cvQuick').innerHTML=CV.busy||!CV.text?'':(CV.sel?['Rewrite this','Make it shorter','Make it clearer','Delete this']:['Shorter','Less technical','Add next steps','Add a risk rating']).map(q=>`<button class="qk">${esc(q)}</button>`).join('');
+  $('cvQuick').querySelectorAll('.qk').forEach(b=>b.onclick=()=>cvRefine(b.textContent));
+  ['cvCopy','cvSlack','cvFile','cvRegen'].forEach(id=>$(id).disabled=CV.busy&&id!=='cvRegen'||(!CV.text&&id!=='cvRegen'));
+  if(CV.tab==='edit'){
+    if(!body.querySelector('textarea')){body.innerHTML='<textarea id="cvTa" style="width:100%;height:100%;min-height:320px;border:none;outline:none;resize:none;background:transparent;font-family:\'Geist Mono\',monospace;font-size:12px;line-height:1.55"></textarea>';$('cvTa').oninput=e=>{CV.text=e.target.value}}
+    if($('cvTa').value!==CV.text)$('cvTa').value=CV.text;
+  }else{
+    body.innerHTML=`<div class="cvdoc">${CV.text?cvDocHtml(CV.text)+(CV.busy?'<span class="caret"></span>':''):thinking('canvas',CV.t0||Date.now())}</div>`;tickThinking();
+    body.querySelectorAll('.cite').forEach(b=>b.onclick=()=>{$('cv').style.display='none';jumpTo(b.dataset.p,+b.dataset.a,+b.dataset.b)});
+  }
+}
+async function genCanvas(refine){
+  const c=S.chat,my=++CV.gen,before=CV.text;
+  if(refine){CV.prev=before;CV.text=''}else{CV.prev=null;CV.text=''}
+  CV.busy=true;CV.t0=Date.now();cvRender();
+  if(!S.a||!S.b){CV.busy=false;CV.text='Pick a comparison first.';return cvRender()}
+  const history=c.msgs.filter(m=>!m.err&&!m.live).map(m=>({role:m.role==='user'?'user':'assistant',text:m.text}));
+  const question=refine
+    ?`Here is the current canvas:\n<<<\n${before}\n>>>\n\n`+(refine.sel?`The user highlighted this part of it:\n"""\n${refine.sel}\n"""\nApply the instruction to THAT part only and leave the rest unchanged.\n\n`:'')+`Instruction: ${refine.text}\n\nReturn the complete updated canvas as Markdown, in the same structure, changing only what the instruction asks for. Output the document only, no preamble.`
+    :'Write the canvas now. Give it a short, descriptive title that names the subject (for example the feature or area being reviewed); do not reuse the user\'s question as the title.';
+  let failed=null;
+  try{
+    const r=await fetch('/api/ask-compare',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({repo:S.repo,base:S.a.ref,head:S.b.ref,baseLabel:S.a.label,headLabel:S.b.label,canvas:true,question,history})});
+    if(!r.ok)throw new Error((await r.json()).error||'Request failed');
+    const rd=r.body.getReader(),dec=new TextDecoder();let buf='',raf=0;
+    for(;;){
+      const {value,done}=await rd.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});let i;
+      while((i=buf.indexOf('\n'))>=0){const l=buf.slice(0,i);buf=buf.slice(i+1);if(!l)continue;const j=JSON.parse(l);if(j.error)throw new Error(j.error);
+        if(j.d&&my===CV.gen){CV.text+=j.d;if(!raf)raf=requestAnimationFrame(()=>{raf=0;if(CV.tab==='prev')cvRender()})}}
+    }
+  }catch(e){failed=e.message}
+  if(my!==CV.gen)return;
+  if(failed){
+    if(refine){CV.text=before;CV.prev=null;toast('Could not apply: '+failed)}
+    else CV.text=(CV.text?CV.text+'\n\n':'')+'(Could not finish: '+failed+')';
+  }
+  CV.busy=false;cvRender();
+}
+function cvRefine(text){
+  text=(text??$('cvIn').value).trim();if(!text||CV.busy||!CV.text)return;
+  $('cvIn').value='';const sel=CV.sel;CV.sel=null;genCanvas({text,sel});
+}
+function openCanvas(){$('cv').style.display='flex';CV.tab='prev';CV.sel=null;CV.prev=null;genCanvas()}
+function cvHeader(mode){
+  const slack=mode==='slack',t=CV.text.trim();
+  return fmt(t,mode)+'\n';
+}
+$('cvX').onclick=()=>{$('cv').style.display='none';CV.gen++;CV.busy=false};
+$('cv').onclick=e=>{if(e.target===$('cv'))$('cvX').click()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('cv').style.display==='flex')$('cvX').click()});
+$('cvTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{CV.tab=b.dataset.t;cvRender()});
+$('cvRegen').onclick=()=>genCanvas();
+$('cvSend').onclick=()=>cvRefine();$('cvIn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();cvRefine()}};
+$('cvUndo').onclick=()=>{if(CV.prev!=null){CV.text=CV.prev;CV.prev=null;cvRender()}};
+$('cvSelX').onclick=()=>{CV.sel=null;cvRender()};
+// highlight text in the preview -> "Edit selection"
+const cvPop=$('cvPop');let cvPend='';
+document.addEventListener('mouseup',e=>{
+  if(e.target===cvPop)return;
+  setTimeout(()=>{
+    if($('cv').style.display!=='flex'||CV.busy){cvPop.style.display='none';return}
+    const sel=getSelection(),txt=sel.toString().trim();
+    const n=sel.rangeCount&&sel.anchorNode&&(sel.anchorNode.nodeType===1?sel.anchorNode:sel.anchorNode.parentElement);
+    if(!txt||!n||!n.closest('#cvBody .cvdoc')){cvPop.style.display='none';return}
+    const rc=sel.getRangeAt(0).getBoundingClientRect();cvPend=txt;
+    cvPop.style.display='block';cvPop.style.left=Math.max(8,Math.min(innerWidth-150,rc.left))+'px';cvPop.style.top=Math.max(8,rc.top-34)+'px';
+  },0);
+});
+cvPop.onmousedown=e=>e.preventDefault();
+cvPop.onclick=()=>{CV.sel=cvPend;cvPop.style.display='none';getSelection().removeAllRanges();cvRender();$('cvIn').focus()};
+$('cvBody').addEventListener('scroll',()=>{cvPop.style.display='none'});
+const flash=(btn,t)=>{const o=btn.dataset.o||btn.textContent;btn.dataset.o=o;btn.textContent=t;btn.style.minWidth=btn.offsetWidth+'px';clearTimeout(btn.ft);btn.ft=setTimeout(()=>{btn.textContent=o;btn.style.minWidth=''},1800)};
+const cvCopy=async(mode,msg,btn)=>{try{await navigator.clipboard.writeText(cvHeader(mode));toast(msg);flash(btn,'Copied ✓')}catch{toast('Copy failed');flash(btn,'Copy failed')}};
+$('cvCopy').onclick=()=>cvCopy('md','Copied. Paste into a Slack canvas',$('cvCopy'));
+$('cvSlack').onclick=()=>cvCopy('slack','Copied. Paste into Slack',$('cvSlack'));
+$('cvFile').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([cvHeader('md')],{type:'text/markdown'}));a.download=((S.chat.title||'summary').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)||'summary')+'.md';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('Downloaded');flash($('cvFile'),'Downloaded ✓')};
+async function doExport(kind){
+  if(kind==='clean'){S.chat.exp=false;renderChat();if(!S.chat.msgs.some(m=>!m.err))return toast('Ask something first');return openCanvas()}
+  const c=S.chat;c.exp=false;
+  if(!c.msgs.some(m=>!m.err))return renderChat();
+  const doc=exportDoc(kind==='slack'?'slack':'md');
+  if(kind==='file'){
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([doc],{type:'text/markdown'}));
+    a.download=(c.title||'chat').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)+'.md';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('Downloaded');
+  }else{
+    try{await navigator.clipboard.writeText(doc);toast(kind==='slack'?'Copied. Paste into Slack':'Copied. Paste into a Slack canvas')}catch{toast('Copy failed')}
+  }
+  renderChat();
+}
+function toast(t){
+  let el=$('toast');if(!el){el=document.createElement('div');el.id='toast';el.style.cssText='position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:120;pointer-events:none;background:var(--text);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:12.5px;box-shadow:var(--shadow-lg);transition:opacity .2s';document.body.append(el)}
+  el.textContent=t;el.style.opacity=1;clearTimeout(el.t);el.t=setTimeout(()=>el.style.opacity=0,2200);
+}
+function openChat(){S.chat.open=true;S.chat.view='chat';renderChat();setTimeout(()=>$('chatIn').focus(),30)}
+async function send(text){
+  const c=S.chat;text=(text??$('chatIn').value).trim();
+  if(!text||c.busy)return;
+  $('chatIn').value='';
+  if(!S.a||!S.b||!S.res){c.msgs.push({role:'user',text},{role:'ai',err:1,text:'Pick something to compare first.'});return renderChat()}
+  const ctx=c.sel?`${c.sel.path} (highlighted)`:c.file?c.file:'';
+  const history=c.msgs.filter(x=>!x.err).slice(-8).map(x=>({role:x.role==='user'?'user':'assistant',text:x.text}));
+  if(!c.id){c.id='c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);c.created=Date.now();c.title=text.replace(/\s+/g,' ').slice(0,48)+(text.length>48?'…':'')}
+  c.msgs.push({role:'user',text,ctx});c.busy=true;c.t0=Date.now();renderChat();
+  try{
+    const r=await fetch('/api/ask-compare',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({repo:S.repo,base:S.a.ref,head:S.b.ref,baseLabel:S.a.label,headLabel:S.b.label,question:text,history,selection:c.sel,file:c.file})});
+    if(!r.ok)throw new Error((await r.json()).error||'Request failed');
+    const m={role:'ai',text:'',live:true};c.msgs.push(m);
+    const rd=r.body.getReader(),dec=new TextDecoder();let buf='',raf=0;
+    const paint=()=>{raf=0;renderChat()};
+    for(;;){
+      const {value,done}=await rd.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});let i;
+      while((i=buf.indexOf('\n'))>=0){
+        const l=buf.slice(0,i);buf=buf.slice(i+1);if(!l)continue;
+        const j=JSON.parse(l);if(j.error)throw new Error(j.error);
+        if(j.d){m.text+=j.d;c.busy=false;if(!raf)raf=requestAnimationFrame(paint)}
+      }
+    }
+    m.live=false;if(!m.text.trim())throw new Error('Empty answer');
+  }catch(e){const last=c.msgs[c.msgs.length-1];if(last&&last.live&&last.text){last.live=false;last.text+='\n\n(stopped: '+e.message+')'}else{if(last&&last.live)c.msgs.pop();c.msgs.push({role:'ai',err:1,text:'Could not get an answer: '+e.message})}}
+  c.busy=false;c.sel=null;c.file=null;renderChat();persist();
+}
+$('kbd').textContent=/Mac|iPhone|iPad/.test(navigator.platform||'')?'⌘ K':'Ctrl K';// resizable chat: drag the left / top / corner edges, or use the expand button; size is remembered
+const CH=(()=>{try{return JSON.parse(lsGet('chatSize'))||{}}catch{return {}}})();
+const clampW=w=>Math.max(320,Math.min(innerWidth-40,w)),clampH=h=>Math.max(320,Math.min(innerHeight-40,h));
+function applySize(){
+  const el=$('chat');
+  if(CH.w)el.style.setProperty('--cw',clampW(CH.w)+'px');else el.style.removeProperty('--cw');
+  if(CH.h)el.style.setProperty('--ch',clampH(CH.h)+'px');else el.style.removeProperty('--ch');
+  const big=(CH.w||380)>=600;el.classList.toggle('big',big);
+  $('chatBig').innerHTML=big?'<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v4h4M6 14v-4H2M10 6l4-4M6 10l-4 4"></path></svg>':'<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2H14v4.5M6.5 14H2V9.5M14 2 9 7M2 14l5-5"></path></svg>';
+}
+const saveSize=()=>lsSet('chatSize',JSON.stringify(CH));
+$('chatBig').onclick=()=>{const big=(CH.w||380)>=600;if(big){delete CH.w;delete CH.h}else{CH.w=Math.min(820,innerWidth-40);CH.h=innerHeight-40}saveSize();applySize()};
+document.querySelectorAll('#chat .rz').forEach(h=>h.onpointerdown=e=>{
+  e.preventDefault();h.setPointerCapture(e.pointerId);h.classList.add('on');
+  const r=$('chat').getBoundingClientRect(),x0=e.clientX,y0=e.clientY,d=h.dataset.d;
+  h.onpointermove=ev=>{
+    if(d!=='t')CH.w=clampW(r.width+(x0-ev.clientX));
+    if(d!=='l')CH.h=clampH(r.height+(y0-ev.clientY));
+    applySize();
+  };
+  h.onpointerup=()=>{h.onpointermove=h.onpointerup=null;h.classList.remove('on');saveSize()};
+});
+addEventListener('resize',applySize);applySize();
+$('chatOpen').onclick=openChat;$('chatClose').onclick=()=>{S.chat.open=false;renderChat()};
+$('chatNew').onclick=newChat;
+$('chatHist').onclick=()=>{S.chat.view=S.chat.view==='history'?'chat':'history';S.chat.exp=false;S.chat.renaming=null;renderChat()};
+$('chatExp').onclick=e=>{e.stopPropagation();S.chat.exp=!S.chat.exp;renderChat()};
+$('expMenu').querySelectorAll('button').forEach(b=>b.onclick=()=>doExport(b.dataset.x));
+document.addEventListener('click',e=>{if(S.chat.exp&&!e.target.closest('#expMenu,#chatExp')){S.chat.exp=false;renderChat()}});
+$('chatTitle').onclick=()=>{if(S.chat.view==='chat'&&S.chat.id&&!S.chat.renaming){S.chat.renaming=S.chat.id;renderChat()}};
+$('ctxX').onclick=()=>{S.chat.sel=null;S.chat.file=null;renderChat()};
+$('chatSend').onclick=()=>send();$('chatIn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();send()}};
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();S.chat.open?$('chatIn').focus():openChat()}});
+// highlight code in the diff -> floating "Ask about selection"
+document.addEventListener('mousedown',e=>{
+  const box=e.target.closest&&e.target.closest('.diff.split');
+  document.querySelectorAll('.diff.sel-l,.diff.sel-r').forEach(d=>d.classList.remove('sel-l','sel-r'));
+  if(!box)return;
+  const side=e.target.closest('.sr>div');
+  if(side&&side.parentElement.classList.contains('sr')&&!side.parentElement.classList.contains('h'))box.classList.add(side===side.parentElement.firstElementChild?'sel-l':'sel-r');
+});
+let pending=null;
+const pop=$('askPop');
+document.addEventListener('mouseup',e=>{
+  if(e.target===pop)return;
+  setTimeout(()=>{
+    const sel=getSelection(),txt=sel.toString().trim();
+    const box=sel.rangeCount&&sel.anchorNode&&(sel.anchorNode.nodeType===1?sel.anchorNode:sel.anchorNode.parentElement).closest('.diff');
+    if(!txt||!box||!S.res){pop.style.display='none';return}
+    const rc=sel.getRangeAt(0).getBoundingClientRect();
+    pending={path:S.res.files[+box.dataset.fi].path,text:txt};
+    pop.style.display='block';pop.style.left=Math.max(8,Math.min(innerWidth-190,rc.left))+'px';pop.style.top=Math.max(8,rc.top-34)+'px';
+  },0);
+});
+pop.onmousedown=e=>e.preventDefault();
+pop.onclick=()=>{S.chat.sel=pending;S.chat.file=null;pop.style.display='none';getSelection().removeAllRanges();openChat()};
+document.addEventListener('scroll',()=>{pop.style.display='none'},true);
+function tick(){
+  const secs=Math.round((Date.now()-S.syncedAt)/1000);
+  $('synced').textContent=S.refreshing?'Syncing…':S.error&&!S.data.repos.length?'Sync failed':secs<5?'Synced just now':secs<60?`Synced ${secs}s ago`:`Synced ${Math.floor(secs/60)}m ago`;
+  $('dot').style.background=S.refreshing?'var(--amber)':S.data&&!S.data.repos.length?'var(--red)':'var(--green)';
+  $('spin').style.animation=S.refreshing?'spin .8s linear infinite':'none';
+}
+async function load(force){
+  const r=await fetch(force?'/api/data?refresh=1':'/api/data');
+  if(!r.ok)throw new Error((await r.json()).error||'Could not load data');
+  const d=await r.json();S.data=d;S.syncedAt=d.fetchedAt||Date.now();
+  if(!S.repo||!d.repos.includes(S.repo))S.repo=d.repos[0];
+}
+$('sortBtn').onclick=()=>{S.sortMenu=!S.sortMenu;render()};$('scrim2').onclick=()=>{S.sortMenu=false;render()};
+$('selToggle').onclick=()=>{S.selOpen=!S.selOpen;lsSet('selOpen',S.selOpen?'1':'0');render()};
+$('refresh').onclick=async()=>{if(S.refreshing)return;S.refreshing=true;tick();try{await load(true)}catch(e){}S.refreshing=false;tick();render();if(S.a&&S.b)run(true)};
+$('repoBtn').onclick=()=>{S.menu=!S.menu;render()};$('scrim').onclick=()=>{S.menu=false;render()};
+$('slotA').onclick=()=>{S.side='a';render()};$('slotB').onclick=()=>{S.side='b';render()};
+$('swap').onclick=()=>{[S.a,S.b]=[S.b,S.a];run()};
+$('q').oninput=e=>{S.q=e.target.value;render()};
+
+(async()=>{
+  S.data={repos:[],branches:[],prs:[],events:[],people:{}};
+  setInterval(tick,1000);
+  try{await load(false)}catch(e){
+    S.error=e.message+'\n\nCompare needs the local server (make start) and a logged-in gh CLI.';tick();render();return;
+  }
+  tick();render();if(S.a&&S.b)run();loadChats();
+})();
+</script>
+</body>
+</html>
