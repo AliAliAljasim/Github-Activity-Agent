@@ -183,6 +183,7 @@ input::placeholder{color:var(--faint)}
             <div id="sortMenu" style="display:none;position:absolute;top:34px;right:0;width:200px;background:var(--panel);border:1px solid var(--border2);border-radius:9px;box-shadow:var(--shadow);padding:4px"></div>
           </div>
           <span id="hint" style="font-size:12px;color:var(--faint)"></span>
+          <label id="cumWrap" style="display:none;font-size:12px;color:var(--muted);align-items:center;gap:6px;cursor:pointer" title="Pick the start and end separately: Base = code before the push you click, Compare = code after the push you click"><input type="checkbox" id="cum"> Range: set only the selected side (Base = before, Compare = after)</label>
         </div>
         <div id="opts"></div></div>
       </section>
@@ -272,7 +273,12 @@ async function run(fresh){
 }
 const pickRef=(ref,label)=>{const o=S.side==='a'?'b':'a';S[S.side]={ref,label};if(!S[o])S.side=o;S.res=null;run()};
 const pickPR=p=>{S.a={ref:p.baseSha||p.base,label:`#${p.n} base (${p.base||'base'})`};S.b={ref:p.headSha||p.branch,label:`#${p.n} ${p.branch}`};run()};
-const pickPush=e=>{const cs=e.commits,f=cs[cs.length-1].sha,l=cs[0].sha;S.a={ref:f+'^',label:'before '+f};S.b={ref:l,label:`${l} (${e.branch})`};run()};
+const pickPush=e=>{
+  const cs=e.commits,f=cs[cs.length-1].sha,l=cs[0].sha;
+  if(!S.one){S.a={ref:f+'^',label:'before '+f};S.b={ref:l,label:`${l} (${e.branch})`};run();return}
+  // Range mode: the Base slot takes the code before the push, the Compare slot the code after it.
+  if(S.side==='a')S.a={ref:f+'^',label:'before '+f};else S.b={ref:l,label:`after ${l} (${e.branch})`};
+  const o=S.side==='a'?'b':'a';if(!S[o])S.side=o;S.res=null;run()};
 const person=login=>(S.data.people[login]||{}).name||login;
 
 const SORTS={
@@ -336,7 +342,9 @@ function render(){
   const gh=$('gh');gh.style.display=res?'block':'none';if(res)gh.href=res.url;
   $('tabs').innerHTML=[['branch','Branches'],['pr','Pull requests'],['push','Pushes']].map(([k,l])=>`<button class="${S.tab===k?'on':''}" data-k="${k}" style="flex:1;justify-content:center">${l}</button>`).join('');
   $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.k;S.q='';$('q').value='';syncUrl();render()});
-  $('hint').textContent=S.tab==='branch'?'Selecting for: '+(S.side==='a'?'Base':'Compare'):S.tab==='pr'?'Fills both sides with the pull request’s changes.':'Fills both sides with the commits in that push.';
+  $('hint').textContent=S.tab==='branch'?'Selecting for: '+(S.side==='a'?'Base':'Compare'):S.tab==='pr'?'Fills both sides with the pull request’s changes.':(S.one?'Base takes the code before the push, Compare the code after it. Selecting for: '+(S.side==='a'?'Base':'Compare'):'Fills both sides with the commits in that push.');
+  $('cumWrap').style.display=S.tab==='push'?'flex':'none';$('cum').checked=!!S.one;
+  $('cum').onchange=()=>{S.one=$('cum').checked;render()};
   const o=options();$('selCount').textContent=o.length;
   const box=$('opts');
   box.innerHTML=o.length?'':'<div style="border-top:1px solid var(--border);padding:28px 14px;text-align:center;color:var(--muted)">Nothing matches</div>';
