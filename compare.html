@@ -517,7 +517,9 @@ function newChat(){Object.assign(S.chat,{id:null,title:'',msgs:[],created:0,view
 
 // ---- export (Slack canvas markdown / Slack mrkdwn message / .md file)
 const gh=p=>'https://github.com/'+p;
-function fmt(text,mode){
+// Drop link markup the model wrote itself (Slack <url|label>, <url>, Markdown [label](url)) so fmt() is the only thing that builds links.
+const unlink=t=>t.replace(/<(?:https?:\/\/[^|>\s]+)\|([^>\n]*)>/g,'$1').replace(/<(https?:\/\/[^>\s]+)>/g,'$1').replace(/\[([^\]\n]+)\]\(https?:\/\/[^)\s]+\)/g,'$1');
+function fmt(text,mode){text=unlink(text);
   const slack=mode==='slack',files=S.res?S.res.files.map(f=>f.path):[],shas=new Set(S.res?S.res.commits.map(c=>c.sha):[]);
   const ref=S.b?S.b.ref:'HEAD',links=[];
   const link=(label,url)=>{links.push(slack?`<${url}|${label.replace(/[<>|]/g,'')}>`:`[${label}](${url})`);return '\u0001'+(links.length-1)+'\u0001'};
@@ -563,6 +565,7 @@ function exportDoc(mode){
 // AI-cleaned canvas: the model condenses the whole chat into a tidy document, shown in an editable preview.
 const CV={text:'',tab:'prev',busy:false,gen:0};
 function cvDocHtml(t){
+  t=unlink(t);
   // headings (# / ##) -> real headings; everything else through the chat renderer
   return t.split(/\n(?=#{1,2} )/).map(sec=>{
     const m=/^(#{1,2}) (.*)\n?([\s\S]*)$/.exec(sec);
