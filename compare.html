@@ -546,6 +546,24 @@ function fmt(text,mode){text=unlink(text);
     return pre+line.replace(/\u0001(\d+)\u0001/g,(x,k)=>links[+k]);
   }).join('\n');
 }
+// Slack's message box only turns <url|label> into a link through its API, never when pasted, so "Copy as Slack message" puts rich text
+// (HTML with real links) on the clipboard, with plain "label (url)" text as the fallback.
+function mdToHtml(md){
+  const e=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const inl=t=>e(t.replace(/\\([\[\]])/g,'$1')).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g,'<a href="$2">$1</a>').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|[^*\w])\*([^*\n]+?)\*(?![*\w])/g,'$1<i>$2</i>');
+  let out='',list=null;const close=()=>{if(list){out+=`</${list}>`;list=null}};
+  for(const line of md.split('\n')){let m;
+    if(m=/^#{1,4}\s+(.*)/.exec(line)){close();out+=`<p><b>${inl(m[1])}</b></p>`}
+    else if(m=/^\s*[-*•]\s+(.*)/.exec(line)){if(list!=='ul'){close();out+='<ul>';list='ul'}out+=`<li>${inl(m[1])}</li>`}
+    else if(m=/^\s*\d+[.)]\s+(.*)/.exec(line)){if(list!=='ol'){close();out+='<ol>';list='ol'}out+=`<li>${inl(m[1])}</li>`}
+    else if(line.trim()){close();out+=`<p>${inl(line)}</p>`}}
+  close();return out;
+}
+async function copyRich(md){
+  const plain=md.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g,'$1 ($2)').replace(/\\([\[\]])/g,'$1');
+  if(window.ClipboardItem)await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([mdToHtml(md)],{type:'text/html'}),'text/plain':new Blob([plain],{type:'text/plain'})})]);
+  else await navigator.clipboard.writeText(plain);
+}
 function exportDoc(mode){
   const c=S.chat,slack=mode==='slack',B=t=>slack?`*${t}*`:`**${t}**`;
   const title=c.title||'Compare chat',cmp=S.a&&S.b?`${S.a.label} → ${S.b.label}`:'';
@@ -652,7 +670,7 @@ cvPop.onmousedown=e=>e.preventDefault();
 cvPop.onclick=()=>{CV.sel=cvPend;cvPop.style.display='none';getSelection().removeAllRanges();cvRender();$('cvIn').focus()};
 $('cvBody').addEventListener('scroll',()=>{cvPop.style.display='none'});
 const flash=(btn,t)=>{const o=btn.dataset.o||btn.textContent;btn.dataset.o=o;btn.textContent=t;btn.style.minWidth=btn.offsetWidth+'px';clearTimeout(btn.ft);btn.ft=setTimeout(()=>{btn.textContent=o;btn.style.minWidth=''},1800)};
-const cvCopy=async(mode,msg,btn)=>{try{await navigator.clipboard.writeText(cvHeader(mode));toast(msg);flash(btn,'Copied ✓')}catch{toast('Copy failed');flash(btn,'Copy failed')}};
+const cvCopy=async(mode,msg,btn)=>{try{if(mode==='slack')await copyRich(cvHeader('md'));else await navigator.clipboard.writeText(cvHeader(mode));toast(msg);flash(btn,'Copied ✓')}catch{toast('Copy failed');flash(btn,'Copy failed')}};
 $('cvCopy').onclick=()=>cvCopy('md','Copied. Paste into a Slack canvas',$('cvCopy'));
 $('cvSlack').onclick=()=>cvCopy('slack','Copied. Paste into Slack',$('cvSlack'));
 $('cvFile').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([cvHeader('md')],{type:'text/markdown'}));a.download=((S.chat.title||'summary').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)||'summary')+'.md';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('Downloaded');flash($('cvFile'),'Downloaded ✓')};
@@ -665,7 +683,7 @@ async function doExport(kind){
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([doc],{type:'text/markdown'}));
     a.download=(c.title||'chat').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)+'.md';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('Downloaded');
   }else{
-    try{await navigator.clipboard.writeText(doc);toast(kind==='slack'?'Copied. Paste into Slack':'Copied. Paste into a Slack canvas')}catch{toast('Copy failed')}
+    try{if(kind==='slack')await copyRich(exportDoc('md'));else await navigator.clipboard.writeText(doc);toast(kind==='slack'?'Copied. Paste into Slack':'Copied. Paste into a Slack canvas')}catch{toast('Copy failed')}
   }
   renderChat();
 }
