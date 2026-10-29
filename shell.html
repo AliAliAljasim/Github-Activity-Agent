@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Activity Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#f7f7f5;--panel:#ffffff;--sunken:#f1f1ee;--hover:#f5f5f2;--border:#e7e7e3;--border2:#d5d5d0;--text:#17171a;--muted:#5f5f67;--faint:#8e8e96;--green:#1d8a4b;--purple:#7445d6;--red:#cc3a30;--amber:#a86f05;--green-bg:color-mix(in srgb,var(--green) 11%,transparent);--purple-bg:color-mix(in srgb,var(--purple) 11%,transparent);--red-bg:color-mix(in srgb,var(--red) 10%,transparent);--amber-bg:color-mix(in srgb,var(--amber) 13%,transparent);--hl:color-mix(in srgb,var(--amber) 16%,transparent);--spark:color-mix(in srgb,var(--text) 7%,transparent);--shimmer:#e9e9e5;--shadow:0 1px 2px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.08);--shadow-lg:0 2px 6px rgba(0,0,0,.06),0 24px 60px rgba(0,0,0,.16);--c0:oklch(0.33 0.01 270);--c1:oklch(0.42 0.08 262);--c2:oklch(0.66 0.08 215);--c3:oklch(0.76 0.1 85);--c4:oklch(0.62 0.1 30);--c5:oklch(0.58 0.07 155);--c6:oklch(0.72 0.05 310);--py:10px}
+html[data-theme=dark]{--bg:#0a0a0b;--panel:#111113;--sunken:#18181b;--hover:#16161a;--border:#232327;--border2:#313137;--text:#ececee;--muted:#a3a3ac;--faint:#73737c;--green:#3fbf73;--purple:#a685f2;--red:#f2675e;--amber:#e3a83a;--shimmer:#222226;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.5);--shadow-lg:0 2px 6px rgba(0,0,0,.4),0 24px 60px rgba(0,0,0,.6);--c0:oklch(0.84 0.01 270);--c1:oklch(0.7 0.09 262);--c2:oklch(0.74 0.08 215);--c3:oklch(0.8 0.1 85);--c4:oklch(0.68 0.11 30);--c5:oklch(0.68 0.08 155);--c6:oklch(0.62 0.05 310)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Geist,ui-sans-serif,system-ui,sans-serif;font-size:13px;line-height:1.4;-webkit-font-smoothing:antialiased;transition:background .2s}
+a{color:inherit;text-decoration:none}
+a:hover{color:var(--text)}
+button,input{font:inherit;color:inherit}
+input::placeholder{color:var(--faint)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+.mono{font-family:'Geist Mono',monospace}
+.btn{height:30px;padding:0 10px;display:flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--panel);border-radius:7px;cursor:pointer;font-size:12.5px}
+.btn:hover{border-color:var(--border2)}
+.seg{display:flex;align-items:center;gap:2px;padding:2px;background:var(--sunken);border:1px solid var(--border);border-radius:7px;height:30px}
+.seg>*{height:24px;padding:0 9px;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:500;display:flex;align-items:center;gap:5px;white-space:nowrap;background:transparent;color:var(--muted)}
+.seg>.on{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ph{display:flex;align-items:center;gap:10px;padding:11px 14px;flex-wrap:wrap}
+.ph.b{border-bottom:1px solid var(--border)}
+.row{border-top:1px solid var(--border)}
+.hov:hover{background:var(--hover)}
+.menu-item{width:100%;height:32px;display:flex;align-items:center;gap:9px;padding:0 9px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-size:12.5px;text-align:left}
+.menu-item:hover{background:var(--hover)}
+.box{width:14px;height:14px;border-radius:4px;border:1px solid var(--border2);color:var(--bg);display:grid;place-items:center}
+.box.on{background:var(--text);border-color:var(--text)}
+.sk{background:linear-gradient(90deg,var(--sunken) 30%,var(--shimmer) 50%,var(--sunken) 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite;border-radius:4px}
+.slot{flex:1;min-width:0;text-align:left;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--sunken);cursor:pointer}
+.slot.active{border-color:var(--text)}
+.slot small{display:block;font-size:11px;color:var(--faint)}
+.slot span{display:block;font-family:'Geist Mono',monospace;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.pick{width:100%;text-align:left;padding:10px 14px;border:none;border-top:1px solid var(--border);background:transparent;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.pick:hover,.pick.on{background:var(--hover)}
+.pick b{font-weight:500;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick small{font-size:12px;color:var(--muted)}
+.fbtn{width:100%;display:flex;gap:10px;align-items:center;padding:10px 14px;border:none;background:transparent;cursor:pointer;text-align:left}
+.fbtn:hover{background:var(--hover)}
+.chev{flex:none;color:var(--faint);transition:transform .15s}
+.diff{margin:0 14px 12px;border:1px solid var(--border);border-radius:8px;overflow:auto;font-family:'Geist Mono',monospace;font-size:11.5px;line-height:1.5;max-height:70vh}
+.diff div{padding:0 10px;white-space:pre;min-width:max-content}
+.diff .a{background:var(--green-bg)}.diff .d{background:var(--red-bg)}.diff .h{color:var(--purple);background:var(--sunken)}
+.diff .u{display:flex;min-width:max-content;padding:0}
+.u .n{flex:none;width:44px;padding:0 8px 0 0;text-align:right;color:var(--faint);user-select:none;-webkit-user-select:none}
+.u .n+.n{border-right:1px solid var(--border);margin-right:8px}
+.u .t{white-space:pre;padding-right:10px}
+.diff.sel-l .sr>div:last-child,.diff.sel-r .sr>div:first-child{user-select:none;-webkit-user-select:none}
+.sr .n{user-select:none;-webkit-user-select:none}
+.diff.split div{padding:0;white-space:normal;min-width:0}
+.sr{display:grid;grid-template-columns:1fr 1fr}
+.sr>div{display:flex;min-width:0}.sr>div+div{border-left:1px solid var(--border)}
+.sr .n{flex:none;width:38px;padding:0 6px;text-align:right;color:var(--faint);user-select:none}
+.sr .t{flex:1;min-width:0;padding:0 8px;white-space:pre-wrap;word-break:break-all}
+.sr .a{background:var(--green-bg)}.sr .d{background:var(--red-bg)}.sr .e{background:var(--sunken)}
+.sr.h{display:block}.sr.h .t{padding:0 10px}
+.diff .hl,.sr.hl>div{box-shadow:inset 3px 0 var(--amber);background:var(--hl)!important}
+.cite{border:none;background:var(--hl);color:inherit;border-radius:4px;padding:0 4px;cursor:pointer;font-family:'Geist Mono',monospace;font-size:11.5px}
+.fask{flex:none;height:22px;padding:0 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel);font-size:11.5px;color:var(--muted);display:flex;align-items:center}
+.fask:hover{color:var(--text);border-color:var(--border2)}
+#chat{position:fixed;right:20px;bottom:20px;z-index:40;width:var(--cw,380px);max-width:calc(100vw - 40px);height:var(--ch,min(540px,calc(100vh - 100px)));max-height:calc(100vh - 40px);display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--border2);border-radius:12px;box-shadow:var(--shadow-lg);overflow:hidden}
+#chat .rz{position:absolute;z-index:2}
+#chat .rz.l{left:-3px;top:12px;bottom:0;width:8px;cursor:ew-resize}
+#chat .rz.t{top:-3px;left:12px;right:0;height:8px;cursor:ns-resize}
+#chat .rz.c{left:-3px;top:-3px;width:16px;height:16px;cursor:nwse-resize}
+#chat .rz:hover,#chat .rz.on{background:color-mix(in srgb,var(--text) 14%,transparent)}
+#chat.big .msgs{padding:16px 22px}
+#chat .msgs{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.5}
+.m-u{align-self:flex-end;max-width:85%;min-width:0;background:var(--sunken);border-radius:12px 12px 3px 12px;padding:8px 12px;display:flex;flex-direction:column;gap:4px}
+.m-u .t{white-space:pre-wrap;overflow-wrap:anywhere}
+.m-u .c{font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted);overflow-wrap:anywhere;line-height:1.35}
+.m-a{word-break:break-word;line-height:1.6;display:flex;flex-direction:column;gap:10px;font-size:13px}
+.m-a p{margin:0;white-space:pre-wrap}
+.m-a h4{margin:4px 0 0;font-size:13px;font-weight:600}
+.m-a strong{font-weight:600}
+.m-a code{font-family:'Geist Mono',monospace;font-size:11.5px;background:var(--sunken);border:1px solid var(--border);border-radius:5px;padding:1px 5px;white-space:normal;overflow-wrap:anywhere}
+.m-a ol,.m-a ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.m-a li{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;background:var(--sunken);border:1px solid var(--border);border-radius:9px}
+.m-a li>div{flex:1;min-width:0}
+.m-a ul li{padding:0;background:none;border:none;gap:8px}
+.m-a ul{gap:5px}
+.m-a ol .b{flex:none;width:20px;height:20px;border-radius:50%;background:var(--text);color:var(--bg);font-size:11px;font-weight:600;display:grid;place-items:center;margin-top:1px}
+.m-a ul .b{flex:none;width:6px;height:6px;border-radius:50%;background:var(--faint);margin-top:8px;margin-left:5px;margin-right:2px}
+.m-a .cite{border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:5px;padding:0 5px;cursor:pointer;font-family:'Geist Mono',monospace;font-size:11px;line-height:1.5;overflow-wrap:anywhere;text-align:left}
+.m-a .cite:hover{background:var(--hl);border-color:var(--amber)}
+.m-a .sha{font-family:'Geist Mono',monospace;font-size:11px;color:var(--purple);background:var(--purple-bg);border-radius:5px;padding:1px 5px}
+.m-a .sha:hover{color:var(--purple);text-decoration:underline}
+.qk{height:24px;padding:0 9px;border:1px solid var(--border);background:var(--sunken);border-radius:999px;cursor:pointer;font-size:11.5px;color:var(--muted)}
+.qk:hover{color:var(--text);border-color:var(--border2)}
+.cvdoc h1{font-size:19px;margin:0 0 6px;letter-spacing:-.01em}
+.cvdoc h2{font-size:14.5px;margin:20px 0 8px;padding-top:12px;border-top:1px solid var(--border)}
+.cvdoc p,.cvdoc li{font-size:13.5px;line-height:1.6}
+.cvdoc .m-a{font-size:13.5px}
+.ib{width:26px;height:26px;padding:0;justify-content:center;color:var(--muted);flex:none}
+.ib:hover{color:var(--text)}
+.hi{display:flex;align-items:center;gap:6px;padding:9px 10px;border:1px solid var(--border);border-radius:9px;background:var(--panel);cursor:pointer}
+.hi:hover{background:var(--hover)}
+.hi.cur{border-color:var(--text)}
+.hi .hm{flex:1;min-width:0}
+.hi b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi small{display:block;color:var(--faint);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi .ib{opacity:0}.hi:hover .ib{opacity:1}
+.rn{width:100%;height:24px;border:1px solid var(--border2);border-radius:6px;background:var(--panel);padding:0 6px;font:inherit;font-weight:500;outline:none}
+.think{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12.5px;padding:2px 0}
+.think .spark{width:14px;height:14px;color:var(--text);animation:pulse 1.4s ease-in-out infinite;flex:none}
+.think .dots{display:inline-flex;gap:3px}
+.think .dots i{width:4px;height:4px;border-radius:50%;background:var(--faint);animation:bounce 1.2s infinite ease-in-out}
+.think .dots i:nth-child(2){animation-delay:.15s}.think .dots i:nth-child(3){animation-delay:.3s}
+.think .el{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--faint);font-size:11.5px}
+@keyframes pulse{0%,100%{transform:scale(.8) rotate(0);opacity:.5}50%{transform:scale(1.1) rotate(45deg);opacity:1}}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-3px);opacity:1}}
+.caret{display:inline-block;width:6px;height:13px;margin-left:2px;vertical-align:-2px;background:var(--text);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.sug{text-align:left;padding:8px 10px;border:1px solid var(--border);background:var(--panel);border-radius:8px;cursor:pointer;font-size:12.5px}
+.sug:hover{background:var(--hover)}
+#askPop{position:fixed;z-index:50;display:none;height:28px;padding:0 10px;border-radius:7px;border:none;background:var(--text);color:var(--bg);font-size:12px;font-weight:500;cursor:pointer;box-shadow:var(--shadow)}
+.add{color:var(--green)}.del{color:var(--red)}
+.empty{padding:48px 20px 52px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+
+html,body{height:100%;overflow:hidden}
+#view,.view{position:fixed;inset:0;width:100%;height:100%;border:0;background:var(--bg)}
+</style>
+</head>
+<body>
+<!-- The shell never reloads: the dashboard and compare pages load in the frame, the chat lives out here and keeps its state across switches. -->
+<iframe id="view" class="view" title="Activity Monitor" style="opacity:0"></iframe>
+<div id="cv" style="display:none;position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.4);align-items:center;justify-content:center;padding:20px">
+  <div class="panel" style="width:min(760px,100%);max-height:calc(100vh - 40px);display:flex;flex-direction:column;box-shadow:var(--shadow-lg)">
+    <div class="ph b" style="flex-wrap:nowrap"><span style="font-weight:600">Slack canvas</span><span id="cvState" style="color:var(--muted);font-size:12px"></span><div style="flex:1"></div>
+      <div class="seg" id="cvTabs"><button data-t="prev" class="on">Preview</button><button data-t="edit">Markdown</button></div>
+      <button class="btn ib" id="cvX" title="Close">✕</button></div>
+    <div id="cvBody" style="flex:1;min-height:260px;overflow:auto;padding:16px 22px"></div>
+    <div id="cvRefine" style="border-top:1px solid var(--border);padding:10px 14px 0">
+      <div id="cvSelChip" style="display:none;margin-bottom:8px;padding:5px 8px;border:1px solid var(--border);background:var(--hl);border-radius:8px;font-size:12px;align-items:center;gap:8px"><span style="color:var(--muted)">Editing</span><span id="cvSelText" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span><button id="cvSelX" style="border:none;background:none;cursor:pointer;color:var(--muted)">✕</button></div>
+      <div style="display:flex;gap:8px;align-items:center;border:1px solid var(--border);border-radius:9px;padding:3px 4px 3px 10px"><input id="cvIn" placeholder="Refine it: e.g. shorten the TL;DR, add a section on tests, make it less technical…" style="flex:1;min-width:0;border:none;outline:none;background:transparent;height:30px;font-size:13px"><button class="btn" id="cvSend" title="Apply" style="width:30px;padding:0;justify-content:center;background:var(--text);color:var(--bg);border:none">↑</button></div>
+      <div id="cvQuick" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+    </div>
+    <div class="ph" style="justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn" id="cvRegen" title="Write a fresh version from the chat">Regenerate</button><button class="btn" id="cvUndo" style="display:none">↶ Undo</button><div style="flex:1"></div>
+      <button class="btn" id="cvFile">Download .md</button><button class="btn" id="cvSlack">Copy as Slack message</button>
+      <button class="btn" id="cvCopy" style="background:var(--text);color:var(--bg);border-color:var(--text)">Copy for canvas</button></div>
+  </div>
+</div>
+<button id="cvPop" style="position:fixed;z-index:130;display:none;height:28px;padding:0 10px;border-radius:7px;border:none;background:var(--text);color:var(--bg);font-size:12px;font-weight:500;cursor:pointer;box-shadow:var(--shadow)">✦ Edit selection</button>
+<button id="chatOpen" style="position:fixed;right:20px;bottom:20px;z-index:40;height:40px;padding:0 10px 0 14px;border-radius:999px;background:var(--text);color:var(--bg);border:none;display:flex;gap:8px;align-items:center;box-shadow:var(--shadow-lg);cursor:pointer;font-weight:500"><svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 9.6 6.4 15 8 9.6 9.6 8 15 6.4 9.6 1 8 6.4 6.4z"></path></svg>Ask<span id="kbd" class="mono" style="font-size:11px;line-height:16px;padding:2px 7px;border-radius:5px;background:color-mix(in srgb,var(--bg) 18%,transparent)"></span></button>
+<section id="chat" style="display:none">
+  <div class="rz l" data-d="l"></div><div class="rz t" data-d="t"></div><div class="rz c" data-d="c"></div>
+  <div class="ph b" style="flex-wrap:nowrap;gap:6px;padding:9px 10px 9px 14px;position:relative">
+    <div style="flex:1;min-width:0"><div id="chatTitle" title="Click to rename" style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:text">Ask</div><div id="chatScope" style="color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div></div>
+    <button class="btn ib" id="chatHist" title="Chat history"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"></circle><path d="M8 4.5V8l2.3 1.5"></path></svg></button>
+    <button class="btn ib" id="chatNew" title="New chat"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 3v10M3 8h10"></path></svg></button>
+    <button class="btn ib" id="chatExp" title="Export chat"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V2.5M5 5.2 8 2.5l3 2.7M3 9v4h10V9"></path></svg></button>
+    <button class="btn ib" id="chatBig" title="Expand / shrink"></button>
+    <button class="btn ib" id="chatClose" title="Close">✕</button>
+    <div id="expMenu" style="display:none;position:absolute;top:46px;right:10px;z-index:5;width:270px;background:var(--panel);border:1px solid var(--border2);border-radius:9px;box-shadow:var(--shadow);padding:4px">
+      <button class="menu-item" data-x="clean" style="height:auto;padding:7px 9px;flex-direction:column;align-items:flex-start;gap:1px"><span>✦ Clean summary for Slack canvas</span><small style="color:var(--faint);font-size:11px">AI writes a tidy doc: TL;DR, findings, follow-ups</small></button>
+      <div style="height:1px;background:var(--border);margin:4px 0"></div><div style="padding:4px 9px;font-size:11px;color:var(--faint)">Full chat</div>
+      <button class="menu-item" data-x="canvas" style="height:auto;padding:7px 9px;flex-direction:column;align-items:flex-start;gap:1px"><span>Copy as Markdown</span><small style="color:var(--faint);font-size:11px">Whole conversation, for a canvas</small></button>
+      <button class="menu-item" data-x="slack" style="height:auto;padding:7px 9px;flex-direction:column;align-items:flex-start;gap:1px"><span>Copy as Slack message</span><small style="color:var(--faint);font-size:11px">Whole conversation, Slack formatting</small></button>
+      <button class="menu-item" data-x="file" style="height:auto;padding:7px 9px;flex-direction:column;align-items:flex-start;gap:1px"><span>Download .md</span><small style="color:var(--faint);font-size:11px">Whole conversation</small></button>
+    </div>
+  </div>
+  <div class="msgs" id="msgs"></div>
+  <div id="chatFoot">
+  <div id="ctxBar" style="display:none;margin:0 14px 8px;padding:6px 8px;border:1px solid var(--border);background:var(--hl);border-radius:8px;font-size:12px;align-items:center;gap:8px"><span id="ctxText" class="mono" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span><button id="ctxX" style="border:none;background:none;cursor:pointer;color:var(--muted)">✕</button></div>
+  <div style="padding:0 14px 14px"><div style="display:flex;gap:8px;align-items:center;border:1px solid var(--border);border-radius:9px;padding:3px 4px 3px 10px"><input id="chatIn" placeholder="Ask about this comparison…" style="flex:1;min-width:0;border:none;outline:none;background:transparent;height:30px;font-size:13px"><button class="btn" id="chatSend" style="width:30px;padding:0;justify-content:center;background:var(--text);color:var(--bg);border:none">↑</button></div></div>
+  </div>
+</section>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
+const lsGet=k=>{try{return localStorage.getItem(k)}catch{return null}},lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
+// S mirrors what the page in the frame reports (S.page, S.repo, S.a, S.b, S.res, S.dash); the chat state itself lives here.
+const S={data:{repos:[],prs:[]},shaRepo:{},page:'dashboard',repo:null,a:null,b:null,res:null,dash:{},chat:{open:false,msgs:[],busy:false,sel:null,file:null,dctx:null,meta:null,id:null,title:'',created:0,view:'chat',renaming:null},chats:[]};
+const theme=()=>lsGet('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+const setTheme=t=>{document.documentElement.dataset.theme=t};
+setTheme(theme());
+const scopeNow=()=>S.page==='compare'?scopeOf(S.repo,S.a,S.b):S.dash.scope||'dashboard';
+function jumpTo(path,a,b){toView({k:'jump',path,a,b})}
+function gotoPR(n){if(S.page==='dashboard')toView({k:'goto',kind:'pr',id:n});else{pendingGoto={k:'goto',kind:'pr',id:n};go('/')}}
+let pendingGoto=null;
+const CITE=/([\w.\/-]+\.\w+):(\d+)(?:[-–](\d+))?/g;
+function chips(escaped){
+  const files=S.res?S.res.files.map(f=>f.path):[],shas=new Set(S.res?S.res.commits.map(c=>c.sha):[]);
+  return escaped.replace(CITE,(m,p,a,b)=>{
+    const full=files.find(x=>x===p||x.endsWith('/'+p));
+    // on the dashboard no comparison is open, so a cited line can't be highlighted: show it as a plain chip
+    return full?`<button class="cite" data-p="${esc(full)}" data-a="${a}" data-b="${b||a}">${m}</button>`:!S.res&&/\.[a-z]\w*$/i.test(p)?`<span class="cite" style="cursor:default">${m}</span>`:m;
+  }).replace(/\b[0-9a-f]{7}\b/g,m=>{const repo=shas.has(m)?S.repo:S.shaRepo[m];return repo?`<a class="sha" target="_blank" href="https://github.com/${esc(repo)}/commit/${m}">${m}</a>`:m})
+   .replace(/(?:([\w.-]+\/[\w.-]+))?#(\d+)\b/g,(m,r,n)=>S.data.prs.some(x=>x.n===+n&&(!r||x.repo===r))?`<button class="cite" data-pr="${n}">#${n}</button>`:m);
+}
+// Small markdown subset: **bold**, `code`, numbered / bulleted lists, paragraphs. Safe on partial (streaming) text.
+function inline(t){
+  // Lift code spans out first so **bold** can wrap them (and `**` inside code stays literal).
+  const spans=[];
+  t=t.replace(/`[^`\n]+`/g,m=>{spans.push(m.slice(1,-1));return '\u0000'+(spans.length-1)+'\u0000'});
+  return chips(esc(t)).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/(^|[^*\w])\*(?![\s*])([^*\n]+?)\*(?![*\w])/g,'$1<em>$2</em>').replace(/\u0000(\d+)\u0000/g,(m,k)=>{
+    const c=chips(esc(spans[+k]));
+    return /^(<button[^>]*>[^<]*<\/button>|<span class="cite"[^>]*>[^<]*<\/span>|<a [^>]*>[^<]*<\/a>)$/.test(c)?c:`<code>${c}</code>`;
+  });
+}
+function md(text){
+  const out=[];let list=null;
+  const flush=()=>{if(list){out.push(`<${list.t}>${list.items.map(x=>`<li><span class="b">${list.t==='ol'?x.n:''}</span><div>${inline(x.s)}</div></li>`).join('')}</${list.t}>`);list=null}};
+  let para=[];const fp=()=>{if(para.length){out.push(`<p>${inline(para.join('\n'))}</p>`);para=[]}};
+  for(const line of text.replace(/\r/g,'').split('\n')){
+    let m;
+    if(!line.trim()){fp();flush();continue}
+    if(m=/^\s*(\d+)[.)]\s+(.*)/.exec(line)){fp();if(!list||list.t!=='ol'){flush();list={t:'ol',items:[]}}list.items.push({n:m[1],s:m[2]});continue}
+    if(m=/^\s*[-*•]\s+(.*)/.exec(line)){fp();if(!list||list.t!=='ul'){flush();list={t:'ul',items:[]}}list.items.push({s:m[1]});continue}
+    if(m=/^#{1,4}\s+(.*)/.exec(line)){fp();flush();out.push(`<h4>${inline(m[1])}</h4>`);continue}
+    if(list&&/^\s+\S/.test(line)){list.items[list.items.length-1].s+=' '+line.trim();continue}
+    flush();para.push(line);
+  }
+  fp();flush();return out.join('');
+}
+const STAGES={chat:[[0,'Reading the context'],[4,'Checking commits, diffs and activity'],[10,'Working out an answer'],[25,'Still working, large diffs take a little longer']],
+  canvas:[[0,'Reading the chat'],[4,'Pulling the key findings together'],[10,'Drafting the canvas'],[25,'Still writing, almost there']]};
+const thinking=(kind,t0)=>`<div class="think" data-k="${kind}" data-t0="${t0}"><svg class="spark" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 9.6 6.4 15 8 9.6 9.6 8 15 6.4 9.6 1 8 6.4 6.4z"></path></svg><span class="tt"></span><span class="dots"><i></i><i></i><i></i></span><span class="el"></span></div>`;
+function tickThinking(){
+  document.querySelectorAll('.think').forEach(el=>{
+    const sec=Math.floor((Date.now()-+el.dataset.t0)/1000),st=STAGES[el.dataset.k];
+    let label=st[0][1];for(const [t,l] of st)if(sec>=t)label=l;
+    const tt=el.querySelector('.tt'),e=el.querySelector('.el');
+    if(tt.textContent!==label)tt.textContent=label;
+    e.textContent=sec>=2?sec+'s':'';
+  });
+}
+setInterval(tickThinking,500);
+const ago=ms=>{const m=Math.max(1,Math.round((Date.now()-ms)/6e4));return m<60?m+'m ago':m<1440?Math.round(m/60)+'h ago':Math.round(m/1440)+'d ago'};
+const scopeOf=(repo,a,b)=>a&&b?`${repo?repo.split('/').pop()+' · ':''}${a.label} → ${b.label}`:'no comparison';
+function titleEditor(id,cur,cls){
+  return `<input class="rn ${cls||''}" data-rn="${esc(id)}" value="${esc(cur)}" maxlength="120">`;
+}
+function bindRename(root){
+  root.querySelectorAll('input[data-rn]').forEach(inp=>{
+    setTimeout(()=>{inp.focus();inp.select()},0);
+    let done=false;
+    const commit=ok=>{if(done)return;done=true;S.chat.renaming=null;if(ok)renameChat(inp.dataset.rn,inp.value.trim());else renderChat()};
+    inp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')commit(true);else if(e.key==='Escape')commit(false)};
+    inp.onblur=()=>commit(true);inp.onclick=e=>e.stopPropagation();
+  });
+}
+function renderChat(){
+  const c=S.chat;
+  $('chatIn').placeholder=S.page==='compare'&&S.res?'Ask about this comparison…':'Ask about this activity…';
+  $('chat').style.display=c.open?'flex':'none';$('chatOpen').style.display=c.open?'none':'flex';
+  const hist=c.view==='history';
+  $('chatScope').textContent=hist?`${S.chats.length} saved chat${S.chats.length===1?'':'s'}`:scopeNow();
+  const tEl=$('chatTitle');
+  if(hist)tEl.textContent='Chat history';
+  else if(c.renaming&&c.renaming===c.id){tEl.innerHTML=titleEditor(c.id,c.title);bindRename(tEl)}
+  else tEl.textContent=c.title||'New chat';
+  $('chatHist').style.color=hist?'var(--text)':'';
+  $('expMenu').style.display=c.exp?'block':'none';
+  $('chatExp').style.display=hist?'none':'flex';
+  const cx=c.dctx?`About ${c.dctx.label}`:c.sel?`Selected in ${c.sel.path}: ${c.sel.text.replace(/\s+/g,' ').slice(0,80)}`:c.file?`File: ${c.file}`:'';
+  $('ctxBar').style.display=cx&&!hist?'flex':'none';$('ctxText').textContent=cx;
+  $('chatFoot').style.display=hist?'none':'block';
+  const m=$('msgs');
+  if(hist){
+    m.innerHTML=S.chats.length?S.chats.map(x=>`<div class="hi ${x.id===c.id?'cur':''}" data-id="${esc(x.id)}"><div class="hm">${c.renaming===x.id?titleEditor(x.id,x.title):`<b>${esc(x.title)}</b>`}<small>${esc(scopeOf(x.repo,x.a,x.b))} · ${ago(x.updated)}</small></div><button class="btn ib" data-ren="${esc(x.id)}" title="Rename">✎</button><button class="btn ib" data-del="${esc(x.id)}" title="Delete">✕</button></div>`).join(''):'<span style="color:var(--muted)">No saved chats yet. Ask something and it is saved automatically.</span>';
+    m.querySelectorAll('.hi').forEach(el=>el.onclick=()=>openSaved(el.dataset.id));
+    m.querySelectorAll('[data-ren]').forEach(b=>b.onclick=e=>{e.stopPropagation();c.renaming=b.dataset.ren;renderChat()});
+    m.querySelectorAll('[data-del]').forEach(b=>b.onclick=e=>{e.stopPropagation();deleteChat(b.dataset.del)});
+    bindRename(m);m.scrollTop=0;return;
+  }
+  if(!c.msgs.length&&!c.busy){
+    const sug=c.dctx&&c.dctx.suggestions||(S.res?(c.sel?['Which commit introduced this?','Explain this code','Any bugs here?']:['Summarise these changes','Which commits touched what?','Any risks or bugs in this diff?']):['What changed this week?','Which PRs need review?']);
+    m.innerHTML=`<span style="color:var(--muted)">${S.res?'Ask about this comparison. Highlight code in the diff to ask about just that part. You can also ask about pull requests, issues and activity.':S.page==='compare'?'No comparison selected. You can still ask about pull requests, issues and activity, or pick two refs, a pull request or a push to ask about the code.':'Ask about pushes, pull requests, issues and reviews in the current view. You can also ask what a commit changed.'}</span>`+sug.map(q=>`<button class="sug" data-q="${esc(q)}">${esc(q)}</button>`).join('');
+    m.querySelectorAll('.sug').forEach(b=>b.onclick=()=>send(b.dataset.q));
+  }else{
+    m.innerHTML=c.msgs.map(x=>x.role==='user'?`<div class="m-u"><div class="t">${esc(x.text)}</div>${x.ctx?`<div class="c">${esc(x.ctx).replace(/\//g,'/<wbr>')}</div>`:''}</div>`:`<div class="m-a" ${x.err?'style="color:var(--red)"':''}>${x.err?esc(x.text):md(x.text)}${x.live?'<span class="caret"></span>':''}</div>`).join('')+(c.busy?thinking('chat',c.t0||Date.now()):'');tickThinking();
+    m.querySelectorAll('.m-a .cite').forEach(b=>b.onclick=()=>b.dataset.pr?gotoPR(+b.dataset.pr):jumpTo(b.dataset.p,+b.dataset.a,+b.dataset.b));
+    if(c.msgs.length!==c.shown||m.scrollHeight-m.scrollTop-m.clientHeight<80||c.busy)m.scrollTop=m.scrollHeight;c.shown=c.msgs.length;
+  }
+}
+// ---- saved chats (server: /api/chats)
+async function loadChats(){try{const r=await fetch('/api/chats');if(r.ok)S.chats=await r.json()}catch{}renderChat()}
+function chatObj(){const c=S.chat;const cm=S.a&&S.b?{repo:S.repo,a:S.a,b:S.b}:c.meta||{};return{id:c.id,title:c.title,repo:cm.repo,a:cm.a,b:cm.b,created:c.created,updated:Date.now(),msgs:c.msgs.filter(m=>!m.live).map(({role,text,ctx,err,page})=>({role,text,ctx,err,page}))}}
+function upsert(o){const i=S.chats.findIndex(x=>x.id===o.id);if(i>=0)S.chats.splice(i,1);S.chats.unshift(o)}
+async function persist(o){
+  o=o||chatObj();upsert(o);
+  try{await fetch('/api/chats/'+encodeURIComponent(o.id),{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(o)})}catch{}
+}
+function renameChat(id,title){
+  const o=S.chats.find(x=>x.id===id);
+  if(o&&title){o.title=title;if(S.chat.id===id)S.chat.title=title;persist(o)}
+  renderChat();
+}
+async function deleteChat(id){
+  S.chats=S.chats.filter(x=>x.id!==id);
+  try{await fetch('/api/chats/'+encodeURIComponent(id),{method:'DELETE'})}catch{}
+  if(S.chat.id===id)Object.assign(S.chat,{id:null,title:'',msgs:[],created:0,meta:null});
+  renderChat();
+}
+function openSaved(id){
+  const o=S.chats.find(x=>x.id===id);if(!o)return;
+  Object.assign(S.chat,{id:o.id,title:o.title,created:o.created,msgs:o.msgs.map(m=>({...m})),view:'chat',sel:null,file:null,busy:false,renaming:null,exp:false,shown:-1});
+  S.chat.meta={repo:o.repo,a:o.a,b:o.b};S.chat.dctx=null;
+  // a chat about a comparison reopens that comparison when you are already on the compare page
+  if(S.page==='compare'&&o.repo&&o.a&&o.b&&S.data.repos.includes(o.repo))go('/compare?'+new URLSearchParams({repo:o.repo,tab:'push',base:o.a.ref,head:o.b.ref,bl:o.a.label,hl:o.b.label}));
+  renderChat();
+}
+function newChat(){Object.assign(S.chat,{id:null,title:'',msgs:[],created:0,meta:null,dctx:null,view:'chat',sel:null,file:null,busy:false,renaming:null,exp:false});renderChat();setTimeout(()=>$('chatIn').focus(),30)}
+
+// ---- export (Slack canvas markdown / Slack mrkdwn message / .md file)
+const gh=p=>'https://github.com/'+p;
+// Drop link markup the model wrote itself (Slack <url|label>, <url>, Markdown [label](url)) so fmt() is the only thing that builds links.
+const unlink=t=>t.replace(/<(?:https?:\/\/[^|>\s]+)\|([^>\n]*)>/g,'$1').replace(/<(https?:\/\/[^>\s]+)>/g,'$1').replace(/\[([^\]\n]+)\]\(https?:\/\/[^)\s]+\)/g,'$1');
+function fmt(text,mode){text=unlink(text);
+  const slack=mode==='slack',files=S.res?S.res.files.map(f=>f.path):[],shas=new Set(S.res?S.res.commits.map(c=>c.sha):[]);
+  const ref=S.b?S.b.ref:'HEAD',links=[];
+  const link=(label,url)=>{links.push(slack?`<${url}|${label.replace(/[<>|]/g,'')}>`:`[${label}](${url})`);return '\u0001'+(links.length-1)+'\u0001'};
+  const spans=[];
+  return text.replace(/\r/g,'').split('\n').map(line=>{
+    let pre='',m;
+    if(m=/^(#{1,4})\s+(.*)/.exec(line)){line=slack?'**'+m[2]+'**':m[1]+' '+m[2]}
+    else if(m=/^(\s*)[-*•]\s+(.*)/.exec(line)){pre=slack?'• ':'- ';line=m[2]}
+    else if(m=/^\s*(\d+)[.)]\s+(.*)/.exec(line)){pre=m[1]+'. ';line=m[2]}
+    line=line.replace(/`[^`\n]+`/g,x=>{spans.push(x.slice(1,-1));return '\u0002'+(spans.length-1)+'\u0002'});
+    if(!slack)line=line.replace(/[\[\]]/g,'\\$&'); // literal brackets must not be read as link syntax
+    if(slack)line=line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const cite=(p,a,b)=>{const full=files.length?files.find(x=>x===p||x.endsWith('/'+p)):(p.includes('/')?p:null);
+      return full?link(`${p}:${a}${b?'-'+b:''}`,gh(`${S.repo}/blob/${ref}/${full.split('/').map(encodeURIComponent).join('/')}#L${a}${b?'-L'+b:''}`)):null};
+    line=line.replace(CITE,(x,p,a,b)=>cite(p,a,b)||x).replace(/\b[0-9a-f]{7}\b/g,x=>shas.has(x)?link(x,gh(`${S.repo}/commit/${x}`)):x);
+    if(slack)line=line.replace(/(^|[^*\w])\*(?![\s*])([^*\n]+?)\*(?![*\w])/g,'$1_$2_');
+    line=line.replace(/\*\*(.+?)\*\*/g,slack?'*$1*':'**$1**');
+    line=line.replace(/\u0002(\d+)\u0002/g,(x,k)=>{
+      const raw=spans[+k],cm=/^([\w.\/-]+\.\w+):(\d+)(?:[-–](\d+))?$/.exec(raw);
+      if(cm){const l=cite(cm[1],cm[2],cm[3]);if(l)return l}
+      if(shas.has(raw))return link(raw,gh(`${S.repo}/commit/${raw}`));
+      return '`'+(slack?raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):raw)+'`';
+    });
+    return pre+line.replace(/\u0001(\d+)\u0001/g,(x,k)=>links[+k]);
+  }).join('\n');
+}
+// Slack's message box only turns <url|label> into a link through its API, never when pasted, so "Copy as Slack message" puts rich text
+// (HTML with real links) on the clipboard, with plain "label (url)" text as the fallback.
+function mdToHtml(md){
+  const e=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const inl=t=>e(t.replace(/\\([\[\]])/g,'$1')).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g,'<a href="$2">$1</a>').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|[^*\w])\*([^*\n]+?)\*(?![*\w])/g,'$1<i>$2</i>');
+  let out='',list=null;const close=()=>{if(list){out+=`</${list}>`;list=null}};
+  for(const line of md.split('\n')){let m;
+    if(m=/^#{1,4}\s+(.*)/.exec(line)){close();out+=`<p><b>${inl(m[1])}</b></p>`}
+    else if(m=/^\s*[-*•]\s+(.*)/.exec(line)){if(list!=='ul'){close();out+='<ul>';list='ul'}out+=`<li>${inl(m[1])}</li>`}
+    else if(m=/^\s*\d+[.)]\s+(.*)/.exec(line)){if(list!=='ol'){close();out+='<ol>';list='ol'}out+=`<li>${inl(m[1])}</li>`}
+    else if(line.trim()){close();out+=`<p>${inl(line)}</p>`}}
+  close();return out;
+}
+async function copyRich(md){
+  const plain=md.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g,'$1 ($2)').replace(/\\([\[\]])/g,'$1');
+  if(window.ClipboardItem)await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([mdToHtml(md)],{type:'text/html'}),'text/plain':new Blob([plain],{type:'text/plain'})})]);
+  else await navigator.clipboard.writeText(plain);
+}
+function exportDoc(mode){
+  const c=S.chat,slack=mode==='slack',B=t=>slack?`*${t}*`:`**${t}**`;
+  const title=c.title||'Compare chat',cmp=S.a&&S.b?`${S.a.label} → ${S.b.label}`:'';
+  const head=[slack?`*${title}*`:`# ${title}`,''];
+  head.push(`${B('Repo')}: ${slack?`<${gh(S.repo)}|${S.repo}>`:`[${S.repo}](${gh(S.repo)})`}`);
+  if(cmp)head.push(`${B('Comparison')}: ${cmp}${S.res&&S.res.url?(slack?` (<${S.res.url}|view on GitHub>)`:` ([view on GitHub](${S.res.url}))`):''}`);
+  if(S.res)head.push(`${B('Changes')}: ${S.res.files.length} files, ${S.res.total} commits`);
+  head.push(`${B('Exported')}: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})}`,'');
+  const out=[...head];let q=0;
+  for(const m of c.msgs){
+    if(m.err||m.live)continue;
+    if(m.role==='user'){out.push(slack?`*Q${++q}. ${m.text.replace(/\n/g,' ')}*`:`## Q${++q}. ${m.text.replace(/\n/g,' ')}`);if(m.ctx)out.push(`_${m.ctx}_`);out.push('')}
+    else out.push(fmt(m.text,mode),'');
+  }
+  return out.join('\n').replace(/\n{3,}/g,'\n\n').trim()+'\n';
+}
+// AI-cleaned canvas: the model condenses the whole chat into a tidy document, shown in an editable preview.
+const CV={text:'',tab:'prev',busy:false,gen:0};
+function cvDocHtml(t){
+  t=unlink(t);
+  // headings (# / ##) -> real headings; everything else through the chat renderer
+  return t.split(/\n(?=#{1,2} )/).map(sec=>{
+    const m=/^(#{1,2}) (.*)\n?([\s\S]*)$/.exec(sec);
+    return m?`<h${m[1].length}>${inline(m[2])}</h${m[1].length}><div class="m-a">${md(m[3])}</div>`:`<div class="m-a">${md(sec)}</div>`;
+  }).join('');
+}
+function cvRender(){
+  const body=$('cvBody');
+  $('cvTabs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.t===CV.tab));
+  $('cvState').textContent=CV.busy?(CV.edit?'Editing selection…':'Writing…'):'';
+  $('cvUndo').style.display=CV.prev!=null&&!CV.busy?'inline-flex':'none';
+  $('cvSend').disabled=CV.busy||!CV.text;$('cvIn').disabled=CV.busy;
+  $('cvSelChip').style.display=CV.sel?'flex':'none';if(CV.sel)$('cvSelText').textContent='“'+CV.sel.replace(/\s+/g,' ').slice(0,90)+'”';
+  $('cvQuick').innerHTML=CV.busy||!CV.text?'':(CV.sel?['Rewrite this','Make it shorter','Make it clearer','Delete this']:['Shorter','Less technical','Add next steps','Add a risk rating']).map(q=>`<button class="qk">${esc(q)}</button>`).join('');
+  $('cvQuick').querySelectorAll('.qk').forEach(b=>b.onclick=()=>cvRefine(b.textContent));
+  ['cvCopy','cvSlack','cvFile','cvRegen'].forEach(id=>$(id).disabled=CV.busy&&id!=='cvRegen'||(!CV.text&&id!=='cvRegen'));
+  if(CV.tab==='edit'){
+    if(!body.querySelector('textarea')){body.innerHTML='<textarea id="cvTa" style="width:100%;height:100%;min-height:320px;border:none;outline:none;resize:none;background:transparent;font-family:\'Geist Mono\',monospace;font-size:12px;line-height:1.55"></textarea>';$('cvTa').oninput=e=>{CV.text=e.target.value}}
+    if($('cvTa').value!==CV.text)$('cvTa').value=CV.text;
+  }else{
+    body.innerHTML=`<div class="cvdoc">${CV.text?cvDocHtml(CV.text)+(CV.busy&&!CV.edit?'<span class="caret"></span>':''):thinking('canvas',CV.t0||Date.now())}</div>`;tickThinking();
+    body.querySelectorAll('.cite').forEach(b=>b.onclick=()=>{$('cv').style.display='none';b.dataset.pr?gotoPR(+b.dataset.pr):jumpTo(b.dataset.p,+b.dataset.a,+b.dataset.b)});
+  }
+}
+// The lines of the Markdown that the selected (rendered) text came from, or null when it can't be matched.
+function selLines(md,sel){
+  const strip=t=>t.replace(/[*`_#]/g,'').replace(/\s+/g,' ').trim(),lines=md.split('\n');
+  let J='';const spans=[];
+  lines.forEach((l,i)=>{const p=strip(l.replace(/^\s*(\d+[.)]|[-•])\s+/,''));if(!p)return;if(J)J+=' ';spans.push([i,J.length,J.length+p.length]);J+=p});
+  const s=strip(sel),at=s?J.indexOf(s):-1;
+  if(at<0)return null;
+  const hit=spans.filter(([,a,b])=>a<at+s.length&&b>at);
+  return hit.length?[hit[0][0],hit[hit.length-1][0]]:null;
+}
+async function genCanvas(refine){
+  const c=S.chat,my=++CV.gen,before=CV.text;
+  // a highlighted part is edited in place: only those lines go to the model and the rest of the canvas is left alone
+  const range=refine&&refine.sel?selLines(before,refine.sel):null;
+  CV.edit=!!range;
+  if(refine){CV.prev=before;if(!range)CV.text=''}else{CV.prev=null;CV.text=''}
+  CV.busy=true;CV.t0=Date.now();cvRender();
+  // the chat decides what the canvas is about: the comparison open now, else the one this chat was started on, else the dashboard data
+  const mt=c.meta&&c.meta.a&&c.meta.b?c.meta:null;
+  const scope=S.page==='compare'&&S.a&&S.b&&S.res?{repo:S.repo,base:S.a.ref,head:S.b.ref,baseLabel:S.a.label,headLabel:S.b.label}
+    :mt?{repo:mt.repo,base:mt.a.ref,head:mt.b.ref,baseLabel:mt.a.label,headLabel:mt.b.label}
+    :{repos:S.page==='compare'?(S.repo?[S.repo]:[]):(S.dash.repos||[]),authors:S.dash.authors||[]};
+  const history=c.msgs.filter(m=>!m.err&&!m.live).map(m=>({role:m.role==='user'?'user':'assistant',text:m.text,page:m.page}));
+  const lines=before.split('\n'),chunk=range?lines.slice(range[0],range[1]+1).join('\n'):'';
+  const question=range
+    ?`Excerpt of the canvas (Markdown):\n<<<\n${chunk}\n>>>\n\nThe user highlighted this part of it: "${refine.sel}"\nInstruction: ${refine.text}\n\nReturn the replacement excerpt only.`
+    :refine
+    ?`Here is the current canvas:\n<<<\n${before}\n>>>\n\n`+(refine.sel?`The user highlighted this part of it:\n"""\n${refine.sel}\n"""\nApply the instruction to THAT part only and leave the rest unchanged.\n\n`:'')+`Instruction: ${refine.text}\n\nReturn the complete updated canvas as Markdown, in the same structure, changing only what the instruction asks for. Output the document only, no preamble.`
+    :'Write the canvas now. Give it a short, descriptive title that names the subject (for example the feature or area being reviewed); do not reuse the user\'s question as the title.';
+  let failed=null,edited='';
+  try{
+    const r=await fetch('/api/ask-compare',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({page:S.page,...scope,canvas:true,edit:!!range,question,history})});
+    if(!r.ok)throw new Error((await r.json()).error||'Request failed');
+    const rd=r.body.getReader(),dec=new TextDecoder();let buf='',raf=0;
+    for(;;){
+      const {value,done}=await rd.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});let i;
+      while((i=buf.indexOf('\n'))>=0){const l=buf.slice(0,i);buf=buf.slice(i+1);if(!l)continue;const j=JSON.parse(l);if(j.error)throw new Error(j.error);
+        if(j.d&&my===CV.gen){if(range)edited+=j.d;else CV.text+=j.d;if(!raf)raf=requestAnimationFrame(()=>{raf=0;if(CV.tab==='prev')cvRender()})}}
+    }
+  }catch(e){failed=e.message}
+  if(my!==CV.gen)return;
+  if(range&&!failed){
+    const out=edited.replace(/^```\w*\n|\n```\s*$/g,'').replace(/\s+$/,'');
+    if(out.trim()||/delete|remove/i.test(refine.text))CV.text=[...lines.slice(0,range[0]),...(out.trim()?out.split('\n'):[]),...lines.slice(range[1]+1)].join('\n');
+    else failed='the model returned nothing';
+  }
+  if(failed){
+    if(refine){CV.text=before;CV.prev=null;CV.edit=false;toast('Could not apply: '+failed)}
+    else CV.text=(CV.text?CV.text+'\n\n':'')+'(Could not finish: '+failed+')';
+  }
+  CV.busy=false;CV.edit=false;cvRender();
+}
+function cvRefine(text){
+  text=(text??$('cvIn').value).trim();if(!text||CV.busy||!CV.text)return;
+  $('cvIn').value='';const sel=CV.sel;CV.sel=null;genCanvas({text,sel});
+}
+function openCanvas(){$('cv').style.display='flex';CV.tab='prev';CV.sel=null;CV.prev=null;genCanvas()}
+function cvHeader(mode){
+  const slack=mode==='slack',t=CV.text.trim();
+  return fmt(t,mode)+'\n';
+}
+$('cvX').onclick=()=>{$('cv').style.display='none';CV.gen++;CV.busy=false};
+$('cv').onclick=e=>{if(e.target===$('cv'))$('cvX').click()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('cv').style.display==='flex')$('cvX').click()});
+$('cvTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{CV.tab=b.dataset.t;cvRender()});
+$('cvRegen').onclick=()=>genCanvas();
+$('cvSend').onclick=()=>cvRefine();$('cvIn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();cvRefine()}};
+$('cvUndo').onclick=()=>{if(CV.prev!=null){CV.text=CV.prev;CV.prev=null;cvRender()}};
+$('cvSelX').onclick=()=>{CV.sel=null;cvRender()};
+// highlight text in the preview -> "Edit selection"
+const cvPop=$('cvPop');let cvPend='';
+document.addEventListener('mouseup',e=>{
+  if(e.target===cvPop)return;
+  setTimeout(()=>{
+    if($('cv').style.display!=='flex'||CV.busy){cvPop.style.display='none';return}
+    const sel=getSelection(),txt=sel.toString().trim();
+    const n=sel.rangeCount&&sel.anchorNode&&(sel.anchorNode.nodeType===1?sel.anchorNode:sel.anchorNode.parentElement);
+    if(!txt||!n||!n.closest('#cvBody .cvdoc')){cvPop.style.display='none';return}
+    const rc=sel.getRangeAt(0).getBoundingClientRect();cvPend=txt;
+    cvPop.style.display='block';cvPop.style.left=Math.max(8,Math.min(innerWidth-150,rc.left))+'px';cvPop.style.top=Math.max(8,rc.top-34)+'px';
+  },0);
+});
+cvPop.onmousedown=e=>e.preventDefault();
+cvPop.onclick=()=>{CV.sel=cvPend;cvPop.style.display='none';getSelection().removeAllRanges();cvRender();$('cvIn').focus()};
+$('cvBody').addEventListener('scroll',()=>{cvPop.style.display='none'});
+const flash=(btn,t)=>{const o=btn.dataset.o||btn.textContent;btn.dataset.o=o;btn.textContent=t;btn.style.minWidth=btn.offsetWidth+'px';clearTimeout(btn.ft);btn.ft=setTimeout(()=>{btn.textContent=o;btn.style.minWidth=''},1800)};
+const cvCopy=async(mode,msg,btn)=>{try{if(mode==='slack')await copyRich(cvHeader('md'));else await navigator.clipboard.writeText(cvHeader(mode));toast(msg);flash(btn,'Copied ✓')}catch{toast('Copy failed');flash(btn,'Copy failed')}};
+$('cvCopy').onclick=()=>cvCopy('md','Copied. Paste into a Slack canvas',$('cvCopy'));
+$('cvSlack').onclick=()=>cvCopy('slack','Copied. Paste into Slack',$('cvSlack'));
+$('cvFile').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([cvHeader('md')],{type:'text/markdown'}));a.download=((S.chat.title||'summary').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)||'summary')+'.md';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('Downloaded');flash($('cvFile'),'Downloaded ✓')};
+async function doExport(kind){
+  if(kind==='clean'){S.chat.exp=false;renderChat();if(!S.chat.msgs.some(m=>!m.err))return toast('Ask something first');return openCanvas()}
+  const c=S.chat;c.exp=false;
+  if(!c.msgs.some(m=>!m.err))return renderChat();
+  const doc=exportDoc(kind==='slack'?'slack':'md');
+  if(kind==='file'){
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([doc],{type:'text/markdown'}));
+    a.download=(c.title||'chat').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)+'.md';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('Downloaded');
+  }else{
+    try{if(kind==='slack')await copyRich(exportDoc('md'));else await navigator.clipboard.writeText(doc);toast(kind==='slack'?'Copied. Paste into Slack':'Copied. Paste into a Slack canvas')}catch{toast('Copy failed')}
+  }
+  renderChat();
+}
+function toast(t){
+  let el=$('toast');if(!el){el=document.createElement('div');el.id='toast';el.style.cssText='position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:120;pointer-events:none;background:var(--text);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:12.5px;box-shadow:var(--shadow-lg);transition:opacity .2s';document.body.append(el)}
+  el.textContent=t;el.style.opacity=1;clearTimeout(el.t);el.t=setTimeout(()=>el.style.opacity=0,2200);
+}
+function openChat(){S.chat.open=true;S.chat.view='chat';S.chat.shown=-1;renderChat();setTimeout(()=>$('chatIn').focus(),30)}
+async function send(text){
+  const c=S.chat;text=(text??$('chatIn').value).trim();
+  if(!text||c.busy)return;
+  $('chatIn').value='';
+  await freshCtx();
+  const cmp=S.page==='compare'&&S.a&&S.b&&S.res;
+  const ctx=c.dctx?c.dctx.label:c.sel?`${c.sel.path} (highlighted)`:c.file?c.file:'';
+  const history=c.msgs.filter(x=>!x.err).slice(-8).map(x=>({role:x.role==='user'?'user':'assistant',text:x.text,page:x.page}));
+  if(!c.id){c.id='c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);c.created=Date.now();c.title=text.replace(/\s+/g,' ').slice(0,48)+(text.length>48?'…':'')}
+  c.msgs.push({role:'user',text,ctx,page:S.page});c.busy=true;c.t0=Date.now();renderChat();
+  const body=cmp
+    ?{repo:S.repo,base:S.a.ref,head:S.b.ref,baseLabel:S.a.label,headLabel:S.b.label,selection:c.sel,file:c.file}
+    :S.page==='compare'?{repos:S.repo?[S.repo]:[]}
+    :{repos:S.dash.repos||[],authors:S.dash.authors||[],visible:S.dash.visible||[],ctx:c.dctx&&{kind:c.dctx.kind,id:c.dctx.id,repo:c.dctx.repo}};
+  try{
+    const r=await fetch('/api/ask-compare',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({page:S.page,...body,question:text,history})});
+    if(!r.ok)throw new Error((await r.json()).error||'Request failed');
+    const m={role:'ai',text:'',live:true,page:S.page};c.msgs.push(m);
+    const rd=r.body.getReader(),dec=new TextDecoder();let buf='',raf=0;
+    const paint=()=>{raf=0;renderChat()};
+    for(;;){
+      const {value,done}=await rd.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});let i;
+      while((i=buf.indexOf('\n'))>=0){
+        const l=buf.slice(0,i);buf=buf.slice(i+1);if(!l)continue;
+        const j=JSON.parse(l);if(j.error)throw new Error(j.error);
+        if(j.d){m.text+=j.d;c.busy=false;if(!raf)raf=requestAnimationFrame(paint)}
+      }
+    }
+    m.live=false;if(!m.text.trim())throw new Error('Empty answer');
+  }catch(e){const last=c.msgs[c.msgs.length-1];if(last&&last.live&&last.text){last.live=false;last.text+='\n\n(stopped: '+e.message+')'}else{if(last&&last.live)c.msgs.pop();c.msgs.push({role:'ai',err:1,text:'Could not get an answer: '+e.message})}}
+  c.busy=false;c.sel=null;c.file=null;c.dctx=null;renderChat();persist();
+}
+$('kbd').textContent=/Mac|iPhone|iPad/.test(navigator.platform||'')?'⌘ K':'Ctrl K';// resizable chat: drag the left / top / corner edges, or use the expand button; size is remembered
+const CH=(()=>{try{return JSON.parse(lsGet('chatSize'))||{}}catch{return {}}})();
+const clampW=w=>Math.max(320,Math.min(innerWidth-40,w)),clampH=h=>Math.max(320,Math.min(innerHeight-40,h));
+function applySize(){
+  const el=$('chat');
+  if(CH.w)el.style.setProperty('--cw',clampW(CH.w)+'px');else el.style.removeProperty('--cw');
+  if(CH.h)el.style.setProperty('--ch',clampH(CH.h)+'px');else el.style.removeProperty('--ch');
+  const big=(CH.w||380)>=600;el.classList.toggle('big',big);
+  $('chatBig').innerHTML=big?'<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v4h4M6 14v-4H2M10 6l4-4M6 10l-4 4"></path></svg>':'<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2H14v4.5M6.5 14H2V9.5M14 2 9 7M2 14l5-5"></path></svg>';
+}
+const saveSize=()=>lsSet('chatSize',JSON.stringify(CH));
+$('chatBig').onclick=()=>{const big=(CH.w||380)>=600;if(big){delete CH.w;delete CH.h}else{CH.w=Math.min(820,innerWidth-40);CH.h=innerHeight-40}saveSize();applySize()};
+document.querySelectorAll('#chat .rz').forEach(h=>h.onpointerdown=e=>{
+  e.preventDefault();h.setPointerCapture(e.pointerId);h.classList.add('on');
+  const r=$('chat').getBoundingClientRect(),x0=e.clientX,y0=e.clientY,d=h.dataset.d;
+  h.onpointermove=ev=>{
+    if(d!=='t')CH.w=clampW(r.width+(x0-ev.clientX));
+    if(d!=='l')CH.h=clampH(r.height+(y0-ev.clientY));
+    applySize();
+  };
+  h.onpointerup=()=>{h.onpointermove=h.onpointerup=null;h.classList.remove('on');saveSize()};
+});
+addEventListener('resize',applySize);applySize();
+$('chatOpen').onclick=openChat;$('chatClose').onclick=()=>{S.chat.open=false;renderChat()};
+$('chatNew').onclick=newChat;
+$('chatHist').onclick=()=>{S.chat.view=S.chat.view==='history'?'chat':'history';S.chat.shown=-1;S.chat.exp=false;S.chat.renaming=null;renderChat()};
+$('chatExp').onclick=e=>{e.stopPropagation();S.chat.exp=!S.chat.exp;renderChat()};
+$('expMenu').querySelectorAll('button').forEach(b=>b.onclick=()=>doExport(b.dataset.x));
+document.addEventListener('click',e=>{if(S.chat.exp&&!e.target.closest('#expMenu,#chatExp')){S.chat.exp=false;renderChat()}});
+$('chatTitle').onclick=()=>{if(S.chat.view==='chat'&&S.chat.id&&!S.chat.renaming){S.chat.renaming=S.chat.id;renderChat()}};
+$('ctxX').onclick=()=>{S.chat.sel=null;S.chat.file=null;S.chat.dctx=null;renderChat()};
+$('chatSend').onclick=()=>send();$('chatIn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();send()}};
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();S.chat.open?$('chatIn').focus():openChat()}});
+// ---- the frame: navigation, and the messages the pages send (see the bridge at the top of each page)
+let view=$('view'),next=null;
+const toView=m=>{try{view.contentWindow.postMessage({...m,sm:1},location.origin)}catch{}};
+// A page loads in a hidden second frame and replaces the visible one only once it is ready, so there is never a blank flash between pages.
+function swapIn(f){
+  if(next!==f)return;next=null;
+  const old=view;view=f;f.style.opacity=1;
+  setTimeout(()=>old.remove(),60);
+  if(pendingGoto){toView(pendingGoto);pendingGoto=null}
+}
+const INNER={'/':'/_dashboard','/compare':'/_compare'};
+function go(url,push=true){
+  const u=new URL(url,location.origin);
+  S.page=u.pathname==='/compare'?'compare':'dashboard';S.a=S.b=S.res=null;S.dash={};
+  if(next)next.remove();
+  const f=next=document.createElement('iframe');
+  f.title='Activity Monitor';f.className='view';f.style.opacity=0;
+  f.src=(INNER[u.pathname]||INNER['/'])+u.search;
+  document.body.insertBefore(f,view.nextSibling);
+  setTimeout(()=>swapIn(f),4000);
+  if(push)history.pushState(null,'',(INNER[u.pathname]?u.pathname:'/')+u.search);
+  renderChat();
+}
+addEventListener('popstate',()=>go(location.pathname+location.search,false));
+let ctxWait=null;
+// Ask the page for its current state (view filters, visible pushes) right before sending a question.
+const freshCtx=()=>new Promise(r=>{ctxWait=r;toView({k:'getctx'});setTimeout(()=>{if(ctxWait===r){ctxWait=null;r()}},400)});
+addEventListener('message',e=>{
+  const m=e.data;if(e.origin!==location.origin||!m||!m.sm)return;
+  const cur=next||view,fromNext=next&&e.source===next.contentWindow;
+  if(m.k==='ready'){if(fromNext)swapIn(next);return}
+  if(e.source!==cur.contentWindow&&e.source!==view.contentWindow)return;
+  if(m.k==='ctx'){if(m.page!==S.page)return;
+    Object.assign(S,{page:m.page,repo:m.repo||S.repo,a:m.a||null,b:m.b||null,res:m.res||null,dash:m.dash||{}});
+    renderChat();if(ctxWait){const r=ctxWait;ctxWait=null;r()}
+  }else if(m.k==='nav')go(m.url);
+  else if(m.k==='url'){if(e.source===cur.contentWindow)history.replaceState(null,'',m.url)}
+  else if(m.k==='ask'){const c=S.chat;c.sel=m.sel||null;c.file=m.file||null;c.dctx=m.dctx||null;openChat()}
+  else if(m.k==='theme')setTheme(m.theme);
+  else if(m.k==='key')S.chat.open?$('chatIn').focus():openChat();
+});
+async function loadData(){try{const r=await fetch('/api/data');if(r.ok){S.data=await r.json();S.shaRepo={};for(const e of S.data.events)if(e.type==='push')for(const c of e.commits)S.shaRepo[c.sha]=e.repo}}catch{}}
+loadData();setInterval(loadData,60e3);
+go(location.pathname+location.search,false);
+loadChats();
+</script>
+</body>
+</html>

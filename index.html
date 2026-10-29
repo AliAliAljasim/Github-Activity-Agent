@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}catch(e){}</script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -24,6 +25,14 @@ input::placeholder{color:var(--faint)}
 @keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
 @keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
 @keyframes caret{50%{opacity:0}}
+@keyframes pulse{0%,100%{transform:scale(.8) rotate(0);opacity:.5}50%{transform:scale(1.1) rotate(45deg);opacity:1}}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-3px);opacity:1}}
+.think{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12.5px;padding:2px 0}
+.think .spark{width:14px;height:14px;color:var(--text);animation:pulse 1.4s ease-in-out infinite;flex:none}
+.think .dots{display:inline-flex;gap:3px}
+.think .dots i{width:4px;height:4px;border-radius:50%;background:var(--faint);animation:bounce 1.2s infinite ease-in-out}
+.think .dots i:nth-child(2){animation-delay:.15s}.think .dots i:nth-child(3){animation-delay:.3s}
+.think .el{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--faint);font-size:11.5px}
 </style>
 </helmet>
 
@@ -450,83 +459,14 @@ input::placeholder{color:var(--faint)}
   </sc-if>
 </main>
 
-<sc-if value="{{ chatClosed }}">
-  <button onClick="{{ openChat }}" style="position:fixed;right:20px;bottom:20px;z-index:40;height:40px;padding:0 10px 0 14px;border-radius:999px;background:var(--text);color:var(--bg);border:none;display:flex;gap:8px;align-items:center;box-shadow:var(--shadow-lg);cursor:pointer;font-weight:500">
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 9.6 6.4 15 8 9.6 9.6 8 15 6.4 9.6 1 8 6.4 6.4z"></path></svg>Ask
-    <span style="font-family:'Geist Mono',monospace;font-size:11px;line-height:16px;padding:2px 7px;border-radius:5px;background:color-mix(in srgb,var(--bg) 18%,transparent)">{{ kbdHint }}</span>
-  </button>
-</sc-if>
-
-<sc-if value="{{ chatOpen }}">
-  <div style="position:fixed;right:16px;bottom:16px;z-index:40;width:min(420px,calc(100vw - 32px));height:min(620px,calc(100vh - 96px));background:var(--panel);border:1px solid var(--border2);border-radius:12px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;overflow:hidden">
-    <div style="display:flex;align-items:center;gap:9px;padding:10px 10px 10px 14px;border-bottom:1px solid var(--border)">
-      <span style="width:22px;height:22px;border-radius:6px;background:var(--text);color:var(--bg);display:grid;place-items:center"><svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 9.6 6.4 15 8 9.6 9.6 8 15 6.4 9.6 1 8 6.4 6.4z"></path></svg></span>
-      <div style="display:flex;flex-direction:column;flex:1;min-width:0">
-        <span style="font-weight:600">Ask</span>
-        <span style="font-size:11.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ chatScope }}</span>
-      </div>
-      <sc-if value="{{ hasMessages }}"><button onClick="{{ clearChat }}" title="New conversation" style="height:26px;padding:0 8px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-size:12px;color:var(--muted)" style-hover="background:var(--sunken);color:var(--text)">Clear</button></sc-if>
-      <button onClick="{{ closeChat }}" title="Minimise (⌘K)" style="width:26px;height:26px;border:none;background:transparent;border-radius:6px;cursor:pointer;display:grid;place-items:center;color:var(--muted)" style-hover="background:var(--sunken);color:var(--text)"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6l4 4 4-4"></path></svg></button>
-    </div>
-
-    <div ref="{{ threadRef }}" style="flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:16px">
-      <sc-if value="{{ noMessages }}">
-        <div style="display:flex;flex-direction:column;gap:12px;margin-top:auto">
-          <span style="color:var(--muted);line-height:1.5;text-wrap:pretty">Ask about pushes, pull requests and reviews in the current view. Answers link back to the matching items.</span>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <sc-for list="{{ suggestions }}" as="q" hint-placeholder-count="3">
-              <button onClick="{{ q.onClick }}" style="display:flex;align-items:center;gap:8px;text-align:left;padding:9px 11px;border:1px solid var(--border);background:var(--panel);border-radius:8px;cursor:pointer;font-size:12.5px" style-hover="border-color:var(--border2);background:var(--hover)"><span style="flex:1">{{ q.label }}</span><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--faint)"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></button>
-            </sc-for>
-          </div>
-        </div>
-      </sc-if>
-      <sc-for list="{{ messages }}" as="m" hint-placeholder-count="0">
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <sc-if value="{{ m.isUser }}">
-            <div style="align-self:flex-end;max-width:85%;display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-              <sc-if value="{{ m.hasCtx }}"><span style="font-size:11px;color:var(--muted);font-family:'Geist Mono',monospace;padding:2px 7px;border:1px solid var(--border);border-radius:5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.ctxLabel }}</span></sc-if>
-              <div style="background:var(--sunken);border-radius:10px 10px 3px 10px;padding:8px 12px;line-height:1.45">{{ m.text }}</div>
-            </div>
-          </sc-if>
-          <sc-if value="{{ m.isAi }}">
-            <div style="display:flex;gap:10px;align-items:flex-start">
-              <span style="flex:none;width:20px;height:20px;border-radius:5px;border:1px solid var(--border);display:grid;place-items:center;color:var(--text);margin-top:1px"><svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 9.6 6.4 15 8 9.6 9.6 8 15 6.4 9.6 1 8 6.4 6.4z"></path></svg></span>
-              <div style="flex:1;min-width:0">
-                <sc-if value="{{ m.thinking }}">
-                  <div style="display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12.5px;padding-top:2px">
-                    <span style="display:flex;gap:3px"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 1.2s infinite"></span><span style="width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 1.2s .2s infinite"></span><span style="width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 1.2s .4s infinite"></span></span>
-                    {{ m.label }}
-                  </div>
-                </sc-if>
-                <sc-if value="{{ m.answering }}">
-                  <div style="white-space:pre-wrap;line-height:1.6;text-wrap:pretty"><sc-for list="{{ m.parts }}" as="p" hint-placeholder-count="0"><sc-if value="{{ p.isText }}"><span>{{ p.v }}</span></sc-if><sc-if value="{{ p.isRef }}"><a onClick="{{ p.onClick }}" title="Show in dashboard" style="font-family:'Geist Mono',monospace;font-size:11.5px;padding:1px 5px;border-radius:4px;background:var(--sunken);border:1px solid var(--border);cursor:pointer;white-space:nowrap" style-hover="border-color:var(--text)">{{ p.v }}</a></sc-if></sc-for><sc-if value="{{ m.streaming }}"><span style="display:inline-block;width:7px;height:14px;margin-left:2px;vertical-align:-2px;background:var(--text);animation:caret 1s steps(1) infinite"></span></sc-if></div>
-                </sc-if>
-              </div>
-            </div>
-          </sc-if>
-        </div>
-      </sc-for>
-    </div>
-
-    <div style="border-top:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:8px">
-      <sc-if value="{{ hasCtx }}">
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <span style="align-self:flex-start;max-width:100%;height:24px;padding:0 3px 0 8px;border-radius:6px;background:var(--sunken);border:1px solid var(--border);font-size:11.5px;display:flex;gap:6px;align-items:center"><span style="color:var(--faint)">About</span><span style="font-family:'Geist Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ctxLabel }}</span><button onClick="{{ clearCtx }}" style="flex:none;width:18px;height:18px;border:none;background:transparent;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--faint)" style-hover="color:var(--text)"><svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button></span>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <sc-for list="{{ ctxSuggestions }}" as="q" hint-placeholder-count="2"><button onClick="{{ q.onClick }}" style="height:26px;padding:0 10px;border:1px solid var(--border);background:var(--panel);border-radius:999px;cursor:pointer;font-size:12px" style-hover="border-color:var(--border2)">{{ q.label }}</button></sc-for>
-          </div>
-        </div>
-      </sc-if>
-      <div style="display:flex;gap:6px;align-items:center;border:1px solid var(--border2);border-radius:9px;padding:4px 4px 4px 12px;background:var(--bg)">
-        <input ref="{{ inputRef }}" value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onKey }}" placeholder="Ask about this activity…" style="flex:1;min-width:0;border:none;outline:none;background:transparent;height:30px;font-size:13px">
-        <button onClick="{{ sendDraft }}" title="Send" style="width:30px;height:30px;border:none;border-radius:7px;background:{{ sendBg }};color:var(--bg);display:grid;place-items:center;cursor:pointer"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"></path></svg></button>
-      </div>
-    </div>
-  </div>
-</sc-if>
-
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Display&quot;},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Live&quot;,&quot;Loading&quot;,&quot;Empty&quot;,&quot;Rate limited&quot;,&quot;Auth error&quot;],&quot;default&quot;:&quot;Live&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;State&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Comfortable&quot;,&quot;Compact&quot;],&quot;default&quot;:&quot;Comfortable&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Display&quot;}}">
+// Bridge to the shell (shell.html), which owns the chat and never reloads. Opened on its own, this page redirects into the shell.
+if(window.parent===window)location.replace('/'+location.search);
+// Ready means fonts loaded and a frame painted, so the shell never swaps in text that is about to reflow.
+const settle=()=>Promise.race([Promise.all(['400 13px Geist','500 13px Geist','600 13px Geist','12px "Geist Mono"'].map(f=>document.fonts.load(f))).catch(()=>{}),new Promise(r=>setTimeout(r,1500))]).then(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+const toShell=m=>{try{parent.postMessage({...m,sm:1},location.origin)}catch(e){}};
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href^="/"]');if(!a||a.target||e.metaKey||e.ctrlKey||e.shiftKey||e.button)return;e.preventDefault();toShell({k:'nav',url:a.getAttribute('href')})},true);
 let NOW=new Date(2026,9,8,14,32).getTime();const H=36e5,D=864e5;
 let SOD=(()=>{const d=new Date(NOW);d.setHours(0,0,0,0);return d.getTime()})();
 const mkRng=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
@@ -618,20 +558,32 @@ const CI={pass:{l:'CI passing',c:'var(--green)'},fail:{l:'CI failing',c:'var(--r
 const STATUS={open:'open',review:'in review',merged:'merged',closed:'closed'};
 
 class Component extends DCLogic {
-  state={theme:null,range:'7d',custom:null,calMonth:null,calStart:null,repos:[],authors:[],bucket:null,stack:'none',menu:null,expanded:{},limit:20,showAll:{},hl:null,hover:null,chatOpen:true,messages:[],draft:'',ctx:null,lastSync:Date.now(),tick:Date.now(),refreshing:false,booting:true,busy:false};
-  threadRef=el=>{this.thread=el};
-  inputRef=el=>{this.input=el};
+  state={theme:null,range:'7d',custom:null,calMonth:null,calStart:null,repos:[],authors:[],bucket:null,stack:'none',menu:null,expanded:{},limit:20,showAll:{},hl:null,hover:null,lastSync:Date.now(),tick:Date.now(),refreshing:false,booting:true};
   componentDidMount(){
     this.applyTheme();this.rlEnd=Date.now()+761e3;
     this.timer=setInterval(()=>{const now=Date.now();this.setState({tick:now});if(now-this.state.lastSync>5*60e3)this.refresh()},1000);
-    this.load(900);
-    this.onKeyG=e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();this.setState(s=>({chatOpen:!s.chatOpen}),()=>this.focus())}};
+    this.load(window.parent===window?900:0); // the artificial skeleton delay would flash on every page switch inside the shell
+    this.onKeyG=e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();toShell({k:'key'})}};
     window.addEventListener('keydown',this.onKeyG);
+    // commands from the shell (shell.html): send the current view for the chat, or jump to a PR an answer mentioned
+    this.onShell=e=>{const m=e.data;if(e.source!==parent||!m||!m.sm)return;if(m.k==='getctx')this.postCtx();else if(m.k==='goto')this.goto(m.kind,m.id)};
+    window.addEventListener('message',this.onShell);
   }
-  componentWillUnmount(){clearInterval(this.timer);clearInterval(this.streamT);window.removeEventListener('keydown',this.onKeyG)}
-  componentDidUpdate(pp,ps){this.applyTheme();if(ps&&ps.messages!==this.state.messages&&this.thread)this.thread.scrollTop=this.thread.scrollHeight}
-  applyTheme(){const r=document.documentElement;let saved=null;try{saved=localStorage.getItem('theme')}catch(e){}r.dataset.theme=this.state.theme||saved||this.props.theme||'light';r.dataset.density=(this.props.density||'Comfortable').toLowerCase()}
-  focus(){setTimeout(()=>this.input&&this.input.focus(),30)}
+  componentWillUnmount(){clearInterval(this.timer);window.removeEventListener('keydown',this.onKeyG);window.removeEventListener('message',this.onShell)}
+  componentDidUpdate(pp,ps){this.applyTheme();
+    if(!this.readySent&&!this.state.booting){this.readySent=true;settle().then(()=>toShell({k:'ready'}))} // the shell swaps this page in once it is fully drawn
+    const st=this.state,key=JSON.stringify([st.range,st.custom,st.repos,st.authors,st.bucket,st.lastSync,st.booting]);
+    if(key!==this.ctxKey){this.ctxKey=key;this.postCtx()}}
+  // What the chat in the shell needs to know about this view: its scope, the filters, and the pushes on screen (so it can load their diffs).
+  postCtx(){
+    let sc;try{sc=this.scope()}catch(e){return}
+    const st=this.state;
+    toShell({k:'ctx',page:'dashboard',dash:{
+      scope:`${sc.cfg.long} · ${st.repos.length?st.repos.join(', '):'all repos'}${st.authors.length?' · '+st.authors.map(a=>PEOPLE[a].name.split(' ')[0]).join(', '):''}`,
+      repos:st.repos,authors:st.authors,
+      visible:sc.cur.filter(e=>e.type==='push').slice(0,10).flatMap(e=>e.commits.map(x=>({repo:e.repo,sha:x.sha})))}});
+  }
+  applyTheme(){const r=document.documentElement;let saved=null;try{saved=localStorage.getItem('theme')}catch(e){}r.dataset.theme=this.state.theme||saved||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');r.dataset.density=(this.props.density||'Comfortable').toLowerCase();if(r.dataset.theme!==this.lastTheme){this.lastTheme=r.dataset.theme;toShell({k:'theme',theme:r.dataset.theme})}}
   view(){return this.state.liveErr||this.props.view||'Live'}
   async load(minMs=0,force=false){
     const t0=Date.now();let patch={lastSync:Date.now()};
@@ -686,98 +638,12 @@ class Component extends DCLogic {
   cmpHref(o){return '/compare?'+new URLSearchParams(o)}
   prHref(p){return this.cmpHref({repo:p.repo,tab:'pr',base:p.baseSha||p.base,head:p.headSha||p.branch,bl:`#${p.n} base (${p.base||'base'})`,hl:`#${p.n} ${p.branch}`})}
   pushHref(e){const cs=e.commits,f=cs[cs.length-1].sha,l=cs[0].sha;return this.cmpHref({repo:e.repo,tab:'push',base:f+'^',head:l,bl:'before '+f,hl:`${l} (${e.branch})`})}
-  // ---- chat
-  ctxLabel(ctx){if(!ctx)return'';if(ctx.kind==='pr'){const p=PRS.find(x=>x.n===ctx.id);return`#${p.n} ${p.title}`}const e=DATA.byId[ctx.id];return e.type==='push'?`push ${e.commits[0].sha} · ${e.repo}@${e.branch}`:`#${e.pr} ${e.title}`}
-  ask(ctx){this.setState({chatOpen:true,ctx,draft:''},()=>this.focus())}
-  send=async(text)=>{
-    text=(text??this.state.draft).trim();if(!text||this.state.busy)return;
-    const ctx=this.state.ctx,sc=this.scope(),st=this.state;
-    const repos=new Set(sc.cur.map(e=>e.repo)).size;
-    const label=ctx?`Reading ${ctx.kind==='pr'?'PR #'+ctx.id:'this event'} and related activity…`:`Reading ${plural(sc.cur.length,'event')} across ${plural(repos,'repo')}…`;
-    const id=Date.now(),history=st.messages.slice(-6).filter(m=>m.role==='user'||m.parts).map(m=>m.role==='user'?{role:'user',text:m.text}:{role:'assistant',text:m.parts.map(x=>x.v).join('')});
-    this.setState(s=>({messages:[...s.messages,{id,role:'user',text,ctx:ctx?this.ctxLabel(ctx):''},{id:id+1,role:'ai',parts:[],shown:0,total:0,thinking:true,label}],draft:'',ctx:null,busy:true}));
-    clearInterval(this.streamT);
-    let parts=null;
-    if(this.live){
-      try{
-        const pr=ctx&&ctx.kind==='pr'?PRS.find(x=>x.n===ctx.id):null;
-        const r=await fetch('/api/ask',{method:'POST',body:JSON.stringify({question:text,ctx:ctx&&{...ctx,repo:pr&&pr.repo},repos:st.repos,authors:st.authors,history})});
-        const j=await r.json();
-        if(j.answer)parts=this.toParts(j.answer);
-      }catch(e){}
-    }
-    if(!parts)parts=this.answer(text,ctx,sc);
-    const total=parts.reduce((a,p)=>a+p.v.length,0);
-    this.updLast({parts,total,thinking:false});
-    this.streamT=setInterval(()=>{const m=this.state.messages[this.state.messages.length-1];if(!m){clearInterval(this.streamT);return}const n=Math.min(m.total,m.shown+4);this.updLast({shown:n});if(n>=m.total){clearInterval(this.streamT);this.setState({busy:false})}},16);
-  };
-  // Turn model text into message parts, linking "owner/repo#12" / "#12" to known PRs.
-  toParts(t){
-    const out=[],re=/(?:([\w.-]+\/[\w.-]+))?#(\d+)/g;let last=0,m;
-    while((m=re.exec(t))){
-      const pr=PRS.find(x=>x.n===+m[2]&&(!m[1]||x.repo===m[1]));if(!pr)continue;
-      if(m.index>last)out.push({t:'text',v:t.slice(last,m.index)});
-      out.push({t:'ref',kind:'pr',id:pr.n,v:'#'+pr.n});last=m.index+m[0].length;
-    }
-    if(last<t.length)out.push({t:'text',v:t.slice(last)});
-    return out;
-  }
-  updLast(p){this.setState(s=>{const ms=s.messages.slice();if(!ms.length)return null;ms[ms.length-1]={...ms[ms.length-1],...p};return{messages:ms}})}
-  answer(q,ctx,sc){
-    const T=v=>({t:'text',v}),R=(kind,id,v)=>({t:'ref',kind,id,v});
-    const evRef=e=>R('event',e.id,e.type==='push'?e.commits[0].sha:'#'+e.pr);
-    const prRef=p=>R('pr',p.n,'#'+p.n);
-    const nm=id=>PEOPLE[id].name;
-    const prAns=p=>{
-      const out=[prRef(p),T(` “${p.title}” by ${nm(p.by)} is ${STATUS[p.status]} in ${p.repo}. It changes ${p.fileCount} files (+${p.adds} −${p.dels}) on ${p.branch}.\n\n`)];
-      if(p.reviews.length){out.push(T('Reviews:\n'));[...p.reviews].sort((a,b)=>b.h-a.h).forEach(v=>{const e=DATA.events.find(x=>x.type==='review'&&x.pr===p.n&&x.author===v.by&&Math.abs(x.ts-(NOW-v.h*H))<1e3);out.push(T(`• ${nm(v.by)} ${v.s==='approved'?'approved':v.s==='changes'?'requested changes':'commented'} `),e?evRef(e):T(''),T(v.body?`: “${v.body}”\n`:'\n'))});out.push(T('\n'))}
-      else out.push(T('No one has reviewed it yet.\n\n'));
-      out.push(T(`${CI[p.ci].l}. `));
-      if(p.status==='merged')out.push(T(`Merged ${rel(NOW-p.merged*H)} ago.`));
-      else if(p.status==='closed')out.push(T(`Closed without merging ${rel(NOW-p.closed*H)} ago.`));
-      else if(p.rv==='changes'){const fix=DATA.events.find(e=>e.type==='push'&&e.branch===p.branch&&e.ts>NOW-(p.reviews.find(v=>v.s==='changes').h)*H);out.push(T(`It is waiting on ${nm(p.by)} to address the requested changes`));if(fix){out.push(T('. A follow-up push '),evRef(fix),T(` landed ${rel(fix.ts)} ago and looks like it addresses them; it needs a re-review.`))}else out.push(T('.'))}
-      else if(p.rv==='approved')out.push(T('It is approved and ready to merge.'));
-      else out.push(T('It needs a first review.'));
-      return out;
-    };
-    const blockAns=p=>{const r=[];if(p.status==='merged'||p.status==='closed')return[prRef(p),T(` is already ${STATUS[p.status]}.`)];
-      if(p.ci==='fail')r.push('CI is failing');if(p.ci==='running')r.push('CI is still running');if(p.rv==='changes')r.push('a reviewer requested changes');if(p.rv==='pending')r.push('it has no approving review');
-      return r.length?[prRef(p),T(` is blocked because ${r.join(', and ')}.`)]:[prRef(p),T(' has an approval and passing CI. Nothing is blocking the merge.')]};
-    if(ctx&&ctx.kind==='pr'){const p=PRS.find(x=>x.n===ctx.id);return /block/i.test(q)?blockAns(p):prAns(p)}
-    if(ctx&&ctx.kind==='event'){
-      const e=DATA.byId[ctx.id],p=PRS.find(x=>x.n===e.pr);
-      if(/else|branch/i.test(q)){const o=DATA.events.filter(x=>x.repo===e.repo&&x.branch===e.branch&&x.id!==e.id&&x.ts>NOW-30*D).slice(0,5);if(!o.length)return[T(`Nothing else touched ${e.branch} in ${e.repo} in the last 30 days.`)];const out=[T(`${plural(o.length,'other event')} on ${e.branch} in ${e.repo} in the last 30 days:\n\n`)];o.forEach(x=>out.push(T('• '),evRef(x),T(` ${nm(x.author)}, ${x.type==='push'?x.commits[0].msg:x.title} (${rel(x.ts)} ago)\n`)));return out}
-      if(e.type!=='push'&&p)return /block/i.test(q)?blockAns(p):prAns(p);
-      if(e.type!=='push')return[T(`${nm(e.author)} ${e.type==='pr_merge'?'merged':e.type==='review'?'reviewed':'opened'} #${e.pr} “${e.title}” in ${e.repo} ${rel(e.ts)} ago (+${e.adds} −${e.dels} across ${e.fileCount} files).`)];
-      const out=[T(`${nm(e.author)} pushed ${plural(e.commits.length,'commit')} to ${e.branch} in ${e.repo} ${rel(e.ts)} ago:\n\n`)];
-      e.commits.forEach(c=>out.push(T(`• ${c.sha} ${c.msg}\n`)));
-      if(p)out.push(T('\nThis branch belongs to '),prRef(p),T(`, which is ${STATUS[p.status]}.`));
-      else if(e.branch==='main')out.push(T('\nThis went straight to main without a pull request.'));
-      return out;
-    }
-    const m=q.match(/#(\d+)/);
-    if(m){const p=PRS.find(x=>x.n===+m[1]);return p?prAns(p):[T(`I can’t find PR #${m[1]} in the selected repositories.`)]}
-    if(/review/i.test(q)){
-      const rv=sc.cur.filter(e=>e.type==='review');if(!rv.length)return[T(`There were no reviews in the ${sc.cfg.long}.`)];
-      const by={};rv.forEach(e=>{(by[e.author]=by[e.author]||[]).push(e)});
-      const rank=Object.entries(by).sort((a,b)=>b[1].length-a[1].length);
-      const out=[T(`${plural(rv.length,'review')} from ${plural(rank.length,'person')} in the ${sc.cfg.long}:\n\n`)];
-      rank.forEach(([a,l],i)=>{const ap=l.filter(x=>x.review==='approved').length,ch=l.filter(x=>x.review==='changes').length;out.push(T(`${i+1}. ${nm(a)}: ${plural(l.length,'review')} (${ap} approved, ${ch} changes requested), latest `),evRef(l[0]),T('\n'))});
-      out.push(T(`\n${nm(rank[0][0])} has been reviewing the most.`));return out;
-    }
-    if(/main/i.test(q)){
-      const ms=sc.all.filter(e=>e.type==='push'&&e.branch==='main'&&e.ts>NOW-7*D&&sc.pR(e)&&sc.pA(e));
-      if(!ms.length)return[T('Nothing was pushed to main in the last 7 days.')];
-      const g={};ms.forEach(e=>{(g[e.repo]=g[e.repo]||[]).push(e)});
-      const out=[T(`${plural(ms.length,'push')} to main across ${plural(Object.keys(g).length,'repo')} in the last 7 days.\n\n`)];
-      Object.entries(g).sort((a,b)=>b[1].length-a[1].length).forEach(([r,l])=>out.push(T(`• ${r}: ${plural(l.length,'push')}, most recently `),evRef(l[0]),T(` “${l[0].commits[0].msg}”\n`)));
-      const merged=PRS.filter(p=>p.merged!=null&&p.merged<7*24&&sc.pR(p)).sort((a,b)=>b.adds-a.adds)[0];
-      if(merged)out.push(T('\nThe largest change was '),prRef(merged),T(` “${merged.title}” (+${merged.adds} −${merged.dels}), merged ${rel(NOW-merged.merged*H)} ago.`));
-      return out;
-    }
-    const c=sc.cur;if(!c.length)return[T(`There’s no activity in the ${sc.cfg.long} for the current filters.`)];
-    const cnt=t=>c.filter(e=>e.type===t).length,top=(k)=>{const o={};c.forEach(e=>o[e[k]]=(o[e[k]]||0)+1);return Object.entries(o).sort((a,b)=>b[1]-a[1])[0][0]};
-    return[T(`In the ${sc.cfg.long}: ${plural(cnt('push'),'push')}, ${cnt('pr_open')} PRs opened, ${cnt('pr_merge')} merged and ${plural(cnt('review'),'review')}. The busiest repo is ${top('repo')} and the most active contributor is ${nm(top('author'))}.\n\nMost recent: `),evRef(c[0]),T(` ${nm(c[0].author)}, ${c[0].type==='push'?c[0].commits[0].msg:c[0].title}.`)];
+  nav(url){if(window.parent!==window)toShell({k:'nav',url});else location.href=url}
+  ctxLabel(ctx){if(ctx.kind==='pr'){const p=PRS.find(x=>x.n===ctx.id);return`#${p.n} ${p.title}`}const e=DATA.byId[ctx.id];return e.type==='push'?`push ${e.commits[0].sha} · ${e.repo}@${e.branch}`:`#${e.pr} ${e.title}`}
+  // The chat lives in the shell; pressing Ask on a row tells it what the question is about.
+  ask(ctx){
+    const isPR=ctx.kind==='pr'||DATA.byId[ctx.id].type!=='push',repo=ctx.kind==='pr'?(PRS.find(x=>x.n===ctx.id)||{}).repo:DATA.byId[ctx.id].repo;
+    toShell({k:'ask',dctx:{...ctx,repo,label:this.ctxLabel(ctx),suggestions:isPR?['Summarise this PR','What’s blocking the merge?']:['Summarise this push','What else touched this branch?']}});
   }
   goto(kind,id){
     if(kind==='pr'){
@@ -853,7 +719,7 @@ class Component extends DCLogic {
         onAuthor:ev=>{ev.stopPropagation();this.addAuthor(e.author)},onRepo:ev=>{ev.stopPropagation();this.addRepo(e.repo)},
         onAsk:ev=>{ev.stopPropagation();this.ask({kind:'event',id:e.id})},
         canCompare:e.type==='push'&&!!(e.commits&&e.commits.length)||!!PRS.find(x=>x.n===e.pr&&x.repo===e.repo),
-        onCompare:ev=>{ev.stopPropagation();const pr=e.type!=='push'&&PRS.find(x=>x.n===e.pr&&x.repo===e.repo);location.href=pr?this.prHref(pr):this.pushHref(e)},stop};
+        onCompare:ev=>{ev.stopPropagation();const pr=e.type!=='push'&&PRS.find(x=>x.n===e.pr&&x.repo===e.repo);this.nav(pr?this.prHref(pr):this.pushHref(e))},stop};
     });
     // PRs
     const groups=[['open','Open','var(--purple)'],['review','In review','var(--amber)'],['merged','Merged','var(--green)'],['closed','Closed','var(--red)']].map(([k,name,color])=>{
@@ -864,7 +730,7 @@ class Component extends DCLogic {
           age:p.status==='merged'?`merged ${rel(NOW-p.merged*H)} ago`:p.status==='closed'?`closed ${rel(NOW-p.closed*H)} ago`:`opened ${rel(NOW-p.opened*H)} ago`,
           rvLabel:RV[p.rv].l,rvColor:RV[p.rv].c,rvBg:RV[p.rv].b,ciLabel:CI[p.ci].l,ciColor:CI[p.ci].c,adds:p.adds,dels:p.dels,
           bg:st.hl&&st.hl.kind==='pr'&&st.hl.id===p.n?'var(--hl)':'transparent',
-          onRepo:()=>this.addRepo(p.repo),onAuthor:()=>this.addAuthor(p.by),onAsk:()=>this.ask({kind:'pr',id:p.n}),onCompare:()=>{location.href=this.prHref(p)}}))};
+          onRepo:()=>this.addRepo(p.repo),onAuthor:()=>this.addAuthor(p.by),onAsk:()=>this.ask({kind:'pr',id:p.n}),onCompare:()=>{this.nav(this.prHref(p))}}))};
     }).filter(g=>g.count);
     // contributors
     const byA={};sc.curRepo.forEach(e=>{(byA[e.author]=byA[e.author]||[]).push(e)});
@@ -883,15 +749,6 @@ class Component extends DCLogic {
     const secs=Math.round((st.tick-st.lastSync)/1000);
     const rl=view==='Rate limited',rem=Math.max(0,Math.round(((this.rlEnd||Date.now()+761e3)-st.tick)/1000));
     const repoScope=st.repos.length?st.repos.join(', '):'all repos';
-    // chat
-    const ms=st.messages.map(m=>{
-      if(m.role==='user')return{isUser:true,isAi:false,text:m.text,hasCtx:!!m.ctx,ctxLabel:m.ctx};
-      let left=m.shown;const parts=[];
-      for(const p of m.parts){if(left<=0)break;const v=p.v.slice(0,left);left-=p.v.length;parts.push({isText:p.t==='text',isRef:p.t==='ref',v,onClick:p.t==='ref'?()=>this.goto(p.kind,p.id):null})}
-      return{isUser:false,isAi:true,thinking:m.thinking,label:m.label,answering:!m.thinking,streaming:!m.thinking&&m.shown<m.total,parts};
-    });
-    const ctxIsPR=st.ctx&&(st.ctx.kind==='pr'||DATA.byId[st.ctx.id].type!=='push');
-    const ctxSug=!st.ctx?[]:ctxIsPR?['Summarise this PR','What’s blocking the merge?']:['Summarise this push','What else touched this branch?'];
     const emptyFiltered=chips.length>0;
     return{
       kbdHint:/Mac|iPhone|iPad/.test(navigator.platform||'')?'⌘ K':'Ctrl K',
@@ -924,15 +781,7 @@ class Component extends DCLogic {
       emptySub:emptyFiltered?'Nothing matches the current filters. Try removing a filter or widening the time range.':`Nothing was pushed, opened or reviewed in ${repoScope} during this period.`,
       canWiden:st.range!=='30d',widen:()=>this.setF({range:'30d',bucket:null}),
       prGroups:isReady?groups:[],prCount:isReady?`${openPRs} open`:'',prEmpty:isReady&&!groups.length,
-      contributors:isReady?contributors:[],contribEmpty:isReady&&!contributors.length,contribSub:`events · ${cfg.name}`,
-      chatOpen:st.chatOpen,chatClosed:!st.chatOpen,openChat:()=>this.setState({chatOpen:true},()=>this.focus()),closeChat:()=>this.setState({chatOpen:false}),
-      chatScope:`${cfg.long} · ${repoScope}${st.authors.length?' · '+st.authors.map(a=>PEOPLE[a].name.split(' ')[0]).join(', '):''}`,
-      messages:ms,hasMessages:ms.length>0,noMessages:!ms.length,clearChat:()=>{clearInterval(this.streamT);this.setState({messages:[],busy:false})},
-      suggestions:['What changed on main this week?','Summarise PR #123','Who’s been reviewing the most?'].map(l=>({label:l,onClick:()=>this.send(l)})),
-      hasCtx:!!st.ctx,ctxLabel:this.ctxLabel(st.ctx),clearCtx:()=>this.setState({ctx:null}),ctxSuggestions:ctxSug.map(l=>({label:l,onClick:()=>this.send(l)})),
-      draft:st.draft,onDraft:e=>this.setState({draft:e.target.value}),onKey:e=>{if(e.key==='Enter'){e.preventDefault();this.send()}},sendDraft:()=>this.send(),
-      sendBg:st.draft.trim()&&!st.busy?'var(--text)':'var(--faint)',
-            threadRef:this.threadRef,inputRef:this.inputRef
+      contributors:isReady?contributors:[],contribEmpty:isReady&&!contributors.length,contribSub:`events · ${cfg.name}`
     };
   }
 }

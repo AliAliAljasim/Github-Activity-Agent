@@ -107,17 +107,37 @@ async function loadPR(repo, p, now) {
   return pr;
 }
 
+// Issues (not PRs) and their comments from the last 60 days, so the assistant can answer questions about them.
+async function loadIssues(repo, now) {
+  const since = new Date(now - 60 * 864e5).toISOString();
+  const [list, comments] = await Promise.all([
+    safe(gh(`repos/${repo}/issues?state=all&sort=updated&direction=desc&per_page=30`), []),
+    safe(gh(`repos/${repo}/issues/comments?since=${since}&per_page=100`), []),
+  ]);
+  const byIssue = new Map();
+  for (const c of comments) {
+    const n = +c.issue_url.split('/').pop();
+    (byIssue.get(n) || byIssue.set(n, []).get(n)).push({ by: c.user?.login || 'ghost', ts: Date.parse(c.created_at), body: c.body || '' });
+  }
+  return list.filter((i) => !i.pull_request).map((i) => ({
+    repo, n: i.number, title: i.title, by: i.user?.login || 'ghost', state: i.state, opened: Date.parse(i.created_at),
+    labels: i.labels.map((l) => l.name), body: i.body || '', comments: (byIssue.get(i.number) || []).sort((a, b) => a.ts - b.ts),
+  }));
+}
+
 async function build() {
   const now = Date.now();
   const repos = await repoList();
-  const prs = [], events = [], branches = [], people = {};
+  const prs = [], events = [], branches = [], issues = [], people = {};
   const person = (login) => { if (login && !people[login]) people[login] = { name: login, hue: hue(login) }; };
 
   await Promise.all(repos.map(async (repo) => {
-    const [list, bp] = await Promise.all([
+    const [list, bp, iss] = await Promise.all([
       safe(gh(`repos/${repo}/pulls?state=all&sort=updated&direction=desc&per_page=25`), []),
       safe(branchPushes(repo), { pushes: [], branches: [] }),
+      safe(loadIssues(repo, now), []),
     ]);
+    issues.push(...iss);
     const full = await Promise.all(list.map((p) => safe(loadPR(repo, p, now), null)));
     full.filter(Boolean).forEach((pr) => {
       prs.push(pr);
@@ -137,7 +157,7 @@ async function build() {
   events.sort((a, b) => b.ts - a.ts);
   events.forEach((e, i) => { e.id = 'e' + (events.length - i); });
   prs.sort((a, b) => b.n - a.n);
-  return { now, repos, people, prs, events, branches };
+  return { now, repos, people, prs, events, branches, issues };
 }
 
 // ---- caching ---------------------------------------------------------------------------------
@@ -164,7 +184,7 @@ function refreshData() {
 }
 // Returns { value, at }. `force` waits for fresh data; otherwise stale data is returned at once and refreshed behind the scenes.
 async function data(force = false) {
-  const usable = dataCache.value && dataCache.key === reposKey();
+  const usable = dataCache.value && dataCache.value.issues && dataCache.key === reposKey();
   if (!usable) { Object.assign(dataCache, { value: null, at: 0 }); await refreshData(); return dataCache; }
   if (force || Date.now() - dataCache.at > TTL * 10) await refreshData();
   else if (Date.now() - dataCache.at > TTL) refreshData();
@@ -174,7 +194,8 @@ async function data(force = false) {
 // ---- "Ask" panel: answers questions by running the Claude CLI headlessly (uses your Claude subscription login).
 const rel = (h) => (h < 1 ? `${Math.max(1, Math.round(h * 60))}m` : h < 48 ? `${Math.round(h)}h` : `${Math.round(h / 24)}d`) + ' ago';
 
-function buildPrompt(d, { question, ctx, repos = [], authors = [], history = [] }) {
+// Dashboard context (PRs, issues, recent activity) as prompt sections. Used by the dashboard chat and, scoped to one repo, by the compare chat.
+function dashSections(d, { ctx, repos = [], authors = [], max = 250 }) {
   const okR = (r) => !repos.length || repos.includes(r), okA = (a) => !authors.length || authors.includes(a);
   const prs = d.prs.filter((p) => okR(p.repo) && okA(p.by)).map((p) => ({
     ref: `${p.repo}#${p.n}`, title: p.title, by: p.by, status: p.status, ci: p.ci, review: p.rv,
@@ -186,19 +207,100 @@ function buildPrompt(d, { question, ctx, repos = [], authors = [], history = [] 
   const evs = d.events.filter((e) => okR(e.repo) && okA(e.author) && d.now - e.ts < 30 * 864e5).slice(0, 250).map((e) =>
     `${rel((d.now - e.ts) / 36e5)} | ${e.repo} | ${e.author} | ${e.type}${e.pr ? ' #' + e.pr : ''}${e.branch ? ' @' + e.branch : ''} | ` +
     (e.type === 'push' ? e.commits.map((c) => `${c.sha} ${c.msg}`).join('; ') : e.title || ''));
+  const day = (t) => new Date(t).toISOString().slice(0, 10);
+  const issues = (d.issues || []).filter((i) => okR(i.repo)).map((i) => ({
+    ref: `${i.repo}#${i.n}`, title: i.title, by: i.by, state: i.state, opened: day(i.opened), labels: i.labels,
+    body: i.body.replace(/\s+/g, ' ').slice(0, 400),
+    comments: i.comments.slice(-30).map((c) => `${day(c.ts)} ${c.by}: ${c.body.replace(/\s+/g, ' ').slice(0, 400)}`),
+  }));
   let focus = '';
   if (ctx?.kind === 'pr') { const p = d.prs.find((x) => x.n === ctx.id && (!ctx.repo || x.repo === ctx.repo)); if (p) focus = `The user is asking about PR ${p.repo}#${p.n}.`; }
   if (ctx?.kind === 'event') { const e = d.events.find((x) => x.id === ctx.id); if (e) focus = `The user is asking about this event: ${rel((d.now - e.ts) / 36e5)} | ${e.repo} | ${e.author} | ${e.type} ${e.pr ? '#' + e.pr : ''} ${e.branch || ''}`; }
-  return [
-    'You are the assistant inside a GitHub Activity Monitor. Answer the question using ONLY the data below. Be concise and concrete (a few sentences or a short bullet list), plain text, no markdown headings.',
-    'When you mention a pull request write it as owner/repo#123 so it can be linked. If the data does not contain the answer, say so.',
+  const sections = [
     `Repos: ${d.repos.join(', ')}`,
     `Pull requests (JSON):\n${JSON.stringify(prs)}`,
+    issues.length ? `Issues and their comments from the last 60 days (JSON; comment dates are absolute, today is ${day(d.now)}):\n${JSON.stringify(issues)}` : '',
     `Recent events (last 30 days, newest first):\n${evs.join('\n')}`,
-    history.length ? `Conversation so far:\n${history.map((m) => `${m.role}: ${m.text}`).join('\n')}` : '',
+  ].filter(Boolean);
+  return { sections, focus };
+}
+
+// Page-aware chat: one prompt builder for both pages. `page` says where the user is asking from, so the model
+// assumes that's what the question is about, but every section it has is available if the question strays.
+const hist = (history) => history.length ? `Conversation so far:\n${history.map((m) => `${m.role}${m.page ? ' [on the ' + m.page + ' page]' : ''}: ${m.text}`).join('\n')}` : '';
+const PAGE_NOTE = {
+  dashboard: 'The user is on the DASHBOARD page (activity feed, pull requests, pushes, issues). Their question most likely concerns that activity, but they may ask about code or comparisons too: the diffs of commits in scope are included below when available.',
+  compare: 'The user is on the COMPARE page, looking at a code comparison. Their question most likely concerns that comparison, but they may also ask about pull requests, issues, reviews or activity: that dashboard data is included below.',
+};
+function buildPrompt(d, { question, ctx, repos = [], authors = [], history = [], page = 'dashboard', canvas, edit }, diffs = '') {
+  const { sections, focus } = dashSections(d, { ctx, repos, authors });
+  if (canvas) return [edit ? EDIT_INSTR : 'You are the assistant inside a GitHub Activity Monitor. Use ONLY the data below and the conversation. ' + CANVAS_INSTR, ...sections, diffs, hist(history), `Question: ${question}`].filter(Boolean).join('\n\n');
+  return [
+    'You are the assistant inside a GitHub Activity Monitor. Answer the question using ONLY the data below (pull requests, issues with comments, push events and commit diffs). Be concise and concrete (a few sentences or a short bullet list).',
+    'Format for a narrow chat panel: short paragraphs, **bold** lead-ins for key points, `inline code` for identifiers, and numbered or - bulleted lists (one item per line, no nesting) when listing several things. No headings, tables or code fences.',
+    'When you mention a pull request or issue write it as owner/repo#123 so it can be linked. If the data does not contain the answer, say so; if a commit has no diff below, say its diff was not loaded rather than guessing.',
+    'When listing findings or changes, give each item a **bold lead-in sentence** followed by one or two sentences of detail. Cite commits by their plain 7-character sha (for example "From 9c6a0ad"), never inside bold. To point at code, cite it as path:LINE or path:START-END using the new-file line numbers (the number before "|" in the patches below); never invent line numbers. Use `inline code` for identifiers, file names and branches.',
+    PAGE_NOTE[page] || PAGE_NOTE.dashboard,
+    ...sections,
+    diffs,
+    hist(history),
     focus,
     `Question: ${question}`,
   ].filter(Boolean).join('\n\n');
+}
+
+// Diffs for the commits in scope of a dashboard question: ones named in the conversation, the push/PR the user pressed Ask on,
+// and the pushes visible in the current view. Capped so the prompt stays a sensible size.
+async function scopeDiffs(d, q) {
+  const bySha = new Map(), picked = new Map();
+  for (const e of d.events) if (e.type === 'push') for (const c of e.commits) bySha.set(c.sha, { repo: e.repo, c, e });
+  const add = (repo, c, meta) => { const k = repo + '@' + c.sha; if (picked.size < 24 && !picked.has(k)) picked.set(k, { repo, sha: c.sha, msg: c.msg, ...meta }); };
+  const addPush = (e) => e.commits.forEach((c) => add(e.repo, c, { branch: e.branch, author: e.author, ts: e.ts }));
+  for (const t of [...(q.history || []).map((h) => h.text), q.question]) for (const m of String(t || '').match(/\b[0-9a-f]{7}\b/g) || []) { const x = bySha.get(m); if (x) addPush({ ...x.e, commits: [x.c] }); }
+  if (q.ctx?.kind === 'event') { const e = d.events.find((x) => x.id === q.ctx.id); if (e?.type === 'push') addPush(e); }
+  if (q.ctx?.kind === 'pr') {
+    const p = d.prs.find((x) => x.n === q.ctx.id && (!q.ctx.repo || x.repo === q.ctx.repo));
+    if (p) {
+      try {
+        const cmp = await compare(new URL('http://x/?' + new URLSearchParams({ repo: p.repo, base: p.baseSha || p.base, head: p.headSha || p.branch })));
+        cmp.commits.forEach((c) => add(p.repo, c, { branch: p.branch, author: c.author, ts: c.date }));
+      } catch {}
+    }
+  }
+  // A question that names a push by topic ("the telemetry active-agent push") matches branch names and commit messages.
+  const STOP = new Set('about after also and any are been before change changed changes commit commits could did does file files for from have how into last latest list main make many more most need push pushes recent review show summarise summarize tell than that the their them then there these they things this those through what when where which while who whose will with work would'.split(' '));
+  const words = [...new Set(String(q.question || '').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !STOP.has(w)))];
+  // "14d", "3 days", "2 weeks" in the question is an age hint: pushes about that old rank higher.
+  const am = /\b(\d+)\s*(h|hours?|d|days?|w|weeks?)\b/i.exec(String(q.question || ''));
+  const target = am ? +am[1] * ({ h: 36e5, d: 864e5, w: 6048e5 }[am[2][0].toLowerCase()]) : 0;
+  if (words.length >= 2 && !q.canvas) {
+    d.events.filter((e) => e.type === 'push' && (!q.repos?.length || q.repos.includes(e.repo)))
+      .map((e) => {
+        const hay = (e.branch + ' ' + e.commits.map((c) => c.msg).join(' ')).toLowerCase().replace(/[^a-z0-9]+/g, ' ');
+        const n = words.filter((w) => hay.includes(w)).length;
+        return { e, n, score: n + (target && Math.abs(d.now - e.ts - target) <= Math.max(target * 0.25, 12 * 36e5) ? 2 : 0) };
+      })
+      .filter((x) => x.n >= 2).sort((x, y) => y.score - x.score || y.e.ts - x.e.ts).slice(0, 3).forEach((x) => addPush(x.e));
+  }
+  // the pushes on screen come last: they fill whatever room is left
+  for (const v of (q.visible || []).slice(0, 40)) { const x = bySha.get(String(v.sha || '').slice(0, 7)); if (x && x.repo === v.repo) addPush({ ...x.e, commits: [x.c] }); }
+  if (!picked.size) return '';
+  const byRepo = new Map();
+  for (const x of picked.values()) (byRepo.get(x.repo) || byRepo.set(x.repo, []).get(x.repo)).push(x);
+  let budget = 45000;
+  const out = [];
+  for (const [repo, list] of byRepo) {
+    const details = await commitDetails(repo, list);
+    list.slice(0, 60).forEach((x, k) => {
+      const f = details[k];
+      const head = `## commit ${x.sha} (${repo}${x.branch ? ' @' + x.branch : ''}${x.author ? ', ' + x.author : ''}) ${x.msg}`;
+      if (!f) { out.push(head + '\n(diff not loaded)'); return; }
+      const body = f.map((y) => `--- ${y.path}\n${annotate(y.patch || '')}`).join('\n');
+      const t = body.length <= budget ? body : body.slice(0, Math.max(0, budget)) + '\n…(truncated)';
+      budget -= t.length; out.push(head + '\n' + (t || '(no textual diff)'));
+    });
+  }
+  return `Commit diffs for the commits in scope, patch lines prefixed with their new-file line number (commits not listed here have no diff loaded):\n${out.join('\n\n')}`;
 }
 
 const askCache = new Map();
@@ -322,7 +424,10 @@ async function commitDetails(repo, commits) {
   }));
   return out;
 }
-function buildComparePrompt(c, details, pushes, {canvas,  repo, baseLabel, headLabel, question, history = [], selection, file }) {
+// Editing a highlighted part of a canvas: the model sees only that excerpt and returns only its replacement.
+const EDIT_INSTR = 'You are editing a short excerpt of a Slack canvas (Markdown). Apply the instruction to the highlighted part only and keep every other word of the excerpt exactly as it is, with the same Markdown structure (list markers, **bold** lead-ins, `inline code`) and the same citations (path:LINE, shas) unless the instruction changes them. Use the data below only to check facts. Never write URLs or link markup, and no square-bracket labels. Return ONLY the replacement excerpt: no preamble, no code fences, no explanation. If the instruction is to delete the highlighted part, return the excerpt without it.';
+const CANVAS_INSTR = 'You are writing a clean, shareable Slack canvas (Markdown) from the conversation below, NOT a transcript. Structure: "# <short descriptive title>", one italic line of context, "## TL;DR" (2-3 sentences), "## Key findings" (numbered list; each item a **bold title** then 1-2 sentences with path:LINE or sha citations), "## Where it changed" (bullets: commit sha and what it did; omit if the conversation was not about code), "## Risks and follow-ups" (bullets). Merge duplicates, drop chit-chat, questions, and anything not supported by the data below; omit empty sections; keep it under about 400 words. Use `inline code` for identifiers. Write commit shas as plain 7-character text and never write URLs or link markup (no <url|text>, no [text](url)); links are added automatically. Never use square brackets for labels (write "High risk:" not "[High]"). No tables or code fences.';
+function buildComparePrompt(c, details, pushes, {canvas, edit, repo, baseLabel, headLabel, question, history = [], selection, file }, extra = []) {
   let budget = 55000;
   const files = c.files.map((f) => {
     const p = annotate(f.patch || '');
@@ -348,7 +453,7 @@ function buildComparePrompt(c, details, pushes, {canvas,  repo, baseLabel, headL
   const focus = selection?.text ? `The user highlighted this code in ${selection.path || 'the diff'}:\n"""\n${String(selection.text).slice(0, 6000)}\n"""` : file ? `The user is asking about the file ${file}.` : '';
   return [
     'You are the assistant inside a GitHub Activity Monitor, looking at a code comparison. Answer using ONLY the data below. Be concise and concrete. ' + (canvas
-      ? 'You are writing a clean, shareable Slack canvas (Markdown) from the conversation below, NOT a transcript. Structure: "# <short descriptive title>", one italic line of context, "## TL;DR" (2-3 sentences), "## Key findings" (numbered list; each item a **bold title** then 1-2 sentences with path:LINE or sha citations), "## Where it changed" (bullets: commit sha and what it did), "## Risks and follow-ups" (bullets). Merge duplicates, drop chit-chat, questions, and anything not supported by the diff data; omit empty sections; keep it under about 400 words. Use `inline code` for identifiers. Write commit shas as plain 7-character text and never write URLs or link markup (no <url|text>, no [text](url)); links are added automatically. Never use square brackets for labels (write "High risk:" not "[High]"). No tables or code fences.'
+      ? (edit ? EDIT_INSTR : CANVAS_INSTR)
       : 'Format for a narrow chat panel: short paragraphs, **bold** lead-ins for key points, `inline code` for identifiers, and numbered or - bulleted lists (one item per line, no nesting) when listing several things. No headings, tables or code fences.'),
     'You CAN tell which commit and push touched or introduced a piece of code: use the per-commit patches and the [push] info. Cite commits by their 7-character sha. If a commit patch is truncated or absent, say so rather than guessing.',
     'To point at code, cite it as path:LINE or path:START-END using new-file line numbers (the number before "|"); these become clickable highlights. Never invent line numbers.',
@@ -356,7 +461,8 @@ function buildComparePrompt(c, details, pushes, {canvas,  repo, baseLabel, headL
     `Commits (sha author: message [push] {files touched}):\n${commitLines.join('\n')}`,
     `Files (combined diff, new-file line numbers):\n${files.join('\n\n')}`,
     perCommit.length ? `Per-commit patches (use these to say which commit/push introduced or changed a given piece of code; match by code content, line numbers differ from the combined diff):\n${perCommit.join('\n\n')}` : '',
-    history.length ? `Conversation so far:\n${history.map((m) => `${m.role}: ${m.text}`).join('\n')}` : '',
+    ...(canvas ? [] : [PAGE_NOTE.compare, ...extra]),
+    hist(history),
     focus,
     `Question: ${question}`,
   ].filter(Boolean).join('\n\n');
@@ -394,7 +500,8 @@ http.createServer(async (req, res) => {
   if (url.pathname === '/api/ask' && req.method === 'POST') {
     try {
       const q = JSON.parse(await readBody(req));
-      const prompt = buildPrompt((await data()).value, q);
+      const d = (await data()).value;
+      const prompt = buildPrompt(d, q, await scopeDiffs(d, q));
       const k = crypto.createHash('sha256').update(prompt).digest('hex');
       const hit = askCache.get(k);
       let answer = hit && Date.now() - hit.at < 600e3 ? hit.answer : null;
@@ -408,10 +515,17 @@ http.createServer(async (req, res) => {
   if (url.pathname === '/api/ask-compare' && req.method === 'POST') {
     try {
       const q = JSON.parse(await readBody(req));
-      const u = new URL('http://x/?' + new URLSearchParams({ repo: q.repo, base: q.base, head: q.head }));
-      const cmp = await compare(u);
-      const evs = (await data()).value.events.filter((e) => e.type === 'push' && e.repo === q.repo);
-      const prompt = buildComparePrompt(cmp, await commitDetails(q.repo, cmp.commits), evs, q);
+      const d = (await data()).value;
+      let prompt;
+      if (q.repo && q.base && q.head) {
+        const cmp = await compare(new URL('http://x/?' + new URLSearchParams({ repo: q.repo, base: q.base, head: q.head })));
+        const evs = d.events.filter((e) => e.type === 'push' && e.repo === q.repo);
+        const { sections } = dashSections(d, { repos: [q.repo] });
+        prompt = buildComparePrompt(cmp, await commitDetails(q.repo, cmp.commits), evs, q, sections);
+      } else {
+        // On the compare page with nothing selected yet: still answer from the dashboard data.
+        prompt = buildPrompt(d, { ...q, page: q.page || 'compare' }, await scopeDiffs(d, q));
+      }
       const k = crypto.createHash('sha256').update(prompt).digest('hex');
       const hit = askCache.get(k);
       let answer = hit && Date.now() - hit.at < 600e3 ? hit.answer : null;
@@ -443,7 +557,7 @@ http.createServer(async (req, res) => {
         const c = JSON.parse(await readBody(req));
         if (!Array.isArray(c.msgs)) return json(400, { error: 'bad chat' });
         chats[id] = { id, title: String(c.title || 'Untitled').slice(0, 120), repo: c.repo, a: c.a, b: c.b, created: c.created || Date.now(), updated: Date.now(),
-          msgs: c.msgs.slice(-200).map((m) => ({ role: m.role === 'user' ? 'user' : 'ai', text: String(m.text || '').slice(0, 30000), ctx: m.ctx ? String(m.ctx).slice(0, 300) : undefined, err: m.err ? 1 : undefined })) };
+          msgs: c.msgs.slice(-200).map((m) => ({ role: m.role === 'user' ? 'user' : 'ai', text: String(m.text || '').slice(0, 30000), ctx: m.ctx ? String(m.ctx).slice(0, 300) : undefined, page: m.page === 'compare' || m.page === 'dashboard' ? m.page : undefined, err: m.err ? 1 : undefined })) };
         saveChats();
         return json(200, chats[id]);
       }
@@ -451,8 +565,9 @@ http.createServer(async (req, res) => {
       return json(405, { error: 'method' });
     } catch (e) { return json(400, { error: String(e.message).slice(0, 300) }); }
   }
-  const name = url.pathname === '/' ? 'index.html' : url.pathname === '/compare' ? 'compare.html' : decodeURIComponent(url.pathname.slice(1));
+  // The shell (shell.html) owns the chat and never reloads; the dashboard and compare pages load inside it as /_dashboard and /_compare.
+  const name = { '/': 'shell.html', '/compare': 'shell.html', '/_dashboard': 'index.html', '/_compare': 'compare.html' }[url.pathname] || decodeURIComponent(url.pathname.slice(1));
   const file = path.join(ROOT, name);
-  if (!['index.html', 'compare.html', 'support.js'].includes(name) || !fs.existsSync(file)) return res.writeHead(404).end('not found');
-  res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'text/plain' }).end(fs.readFileSync(file));
+  if (!['shell.html', 'index.html', 'compare.html', 'support.js'].includes(name) || !fs.existsSync(file)) return res.writeHead(404).end('not found');
+  res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'text/plain', 'cache-control': 'no-cache' }).end(fs.readFileSync(file));
 }).listen(PORT, '127.0.0.1', () => console.log(`Activity Monitor: http://localhost:${PORT}`));
