@@ -240,8 +240,8 @@ function askClaudeStream(prompt, onDelta) {
 
 const readBody = (req) => new Promise((res, rej) => { let b = ''; req.on('data', (c) => { b += c; if (b.length > 1e6) req.destroy(); }); req.on('end', () => res(b)); req.on('error', rej); });
 
-const REF = /^[\w./^~@-]{1,200}$/;
-const SHA_REF = /^[0-9a-f]{7,40}\^?$/;
+const REF = /^[\w./^~@+-]{1,400}$/;
+const SHA_REF = /^[0-9a-f]{7,40}(\+[0-9a-f]{7,40})*\^?$/;
 const cmpCache = new Map(Object.entries(readJson('compare.json', {})));
 let cmpSaveT = null;
 async function compare(url) {
@@ -257,11 +257,25 @@ async function compare(url) {
   return value;
 }
 async function compareUncached(url) {
-  const repo = url.searchParams.get('repo'), base = url.searchParams.get('base'), head = url.searchParams.get('head');
+  let base = url.searchParams.get('base'), head = url.searchParams.get('head');
+  const repo = url.searchParams.get('repo');
   if (!(await data()).value.repos.includes(repo) || !REF.test(base || '') || !REF.test(head || '') || base.startsWith('-') || head.startsWith('-')) throw Object.assign(new Error('bad request'), { status: 400 });
   // GitHub's compare endpoint doesn't understand "sha^", so resolve the parent ourselves.
   const parentOf = async (sha) => (await gh(`repos/${repo}/commits/${sha}`)).parents[0]?.sha || sha;
   const cmp = (x, y) => gh(`repos/${repo}/compare/${x}...${y}?per_page=100`);
+  // "a+b+c" is a push's commit list; commit dates can disagree with the graph, so pick its first (base) or last (head) commit by parentage.
+  const fromSet = async (spec, tip) => {
+    const shas = spec.split('+');
+    if (shas.length === 1) return shas[0];
+    const cs = await Promise.all(shas.map((s) => gh(`repos/${repo}/commits/${s}`)));
+    const all = new Set(cs.map((x) => x.sha));
+    const parents = new Set(cs.flatMap((x) => x.parents.map((p) => p.sha)));
+    const pick = tip ? cs.find((x) => !parents.has(x.sha)) : cs.find((x) => !x.parents.some((p) => all.has(p.sha)));
+    return (pick || cs[0]).sha;
+  };
+  const wasCaret = base.endsWith('^');
+  base = (await fromSet(wasCaret ? base.slice(0, -1) : base, false)) + (wasCaret ? '^' : '');
+  head = await fromSet(head, true);
   const caret = base.endsWith('^');
   let c = await cmp(caret ? await parentOf(base.slice(0, -1)) : base, head);
   // A push's commits can arrive in either order (commit dates are unreliable), so retry the other way round.

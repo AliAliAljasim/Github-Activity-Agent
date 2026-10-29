@@ -274,10 +274,10 @@ async function run(fresh){
 const pickRef=(ref,label)=>{const o=S.side==='a'?'b':'a';S[S.side]={ref,label};if(!S[o])S.side=o;S.res=null;run()};
 const pickPR=p=>{S.a={ref:p.baseSha||p.base,label:`#${p.n} base (${p.base||'base'})`};S.b={ref:p.headSha||p.branch,label:`#${p.n} ${p.branch}`};run()};
 const pickPush=e=>{
-  const cs=e.commits,f=cs[cs.length-1].sha,l=cs[0].sha;
-  if(!S.one){S.a={ref:f+'^',label:'before '+f};S.b={ref:l,label:`${l} (${e.branch})`};run();return}
+  const cs=e.commits,all=cs.map(x=>x.sha).join('+'),f=all,l=all,fs=cs[cs.length-1].sha,ls=cs[0].sha;
+  if(!S.one){S.a={ref:f+'^',label:'before '+fs};S.b={ref:l,label:`${ls} (${e.branch})`};run();return}
   // Range mode: the Base slot takes the code before the push, the Compare slot the code after it.
-  if(S.side==='a')S.a={ref:f+'^',label:'before '+f};else S.b={ref:l,label:`after ${l} (${e.branch})`};
+  if(S.side==='a')S.a={ref:f+'^',label:'before '+fs};else S.b={ref:l,label:`after ${ls} (${e.branch})`};
   const o=S.side==='a'?'b':'a';if(!S[o])S.side=o;S.res=null;run()};
 const person=login=>(S.data.people[login]||{}).name||login;
 
